@@ -1,6 +1,13 @@
 # infra_stacks
 
-TODO : add READ me
+To set up stack in AWS
 ```
-terraform apply -var-file="variables.tfvars"
+terraform -chdir=./terraform apply -var-file="variables.tfvars" -auto-approve
+```
+flag -auto-approve approves run to execute in cloud.
+
+To destroy stack:
+```
+terraform -chdir=./terraform destroy -var-file=variables.tfvars -auto-approve
+
 ```
