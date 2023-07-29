@@ -6,7 +6,7 @@ resource "aws_s3_bucket" "s3_bucket_test" {
   bucket = "bucket-v2-${local.name_alias}"
 }
 
-resource "aws_redshift_cluster" "example" {
+/* resource "aws_redshift_cluster" "example" {
   cluster_identifier = "tf-redshift-cluster"
   database_name      = "mydb"
   master_username    = "exampleuser"
@@ -35,5 +35,7 @@ resource "aws_redshift_cluster" "redshift_cluster" {
   cluster_type        = "single-node"
   skip_final_snapshot = true
   vpc_security_group_ids = ["${aws_security_group.my_security_group.id}"]
-  cluster_subnet_group_name = "${aws_redshift_subnet_group.my_redshift_subnet_group.id}"
-}
+  cluster_subnet_group_name = "${aws_redshift_subnet_group.my_redshift_subnet_group.id}" 
+}*/
+
+
