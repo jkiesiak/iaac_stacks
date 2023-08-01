@@ -1,2 +1,4 @@
 .terraform
 variables.tfvars
+run-terraform.sh
+        
