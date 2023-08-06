@@ -1,73 +1,51 @@
 module "db" {
   source = "terraform-aws-modules/rds/aws"
 
-  identifier = "demodb"
+  identifier = "demodb-${local.name_alias}"
 
-  engine            = "mysql"
-  engine_version    = "5.7"
-  instance_class    = "db.t3a.large"
-  allocated_storage = 5
+  engine               = "postgres"
+  engine_version       = "14"
+  family               = "postgres14"
+  major_engine_version = "14"
+  instance_class       = "db.t4g.large"
 
-  db_name  = "demodb"
-  username = "user"
-  port     = "3306"
+  allocated_storage     = 20
+  max_allocated_storage = 100
+
+  db_name  = "PostgreSql1"
+  username = "postgres1"
+  port     = 5432
 
   iam_database_authentication_enabled = true
+#  db_subnet_group_name   = module.vpc.database_subnet_group
+  vpc_security_group_ids = module.vpc.default_vpc_default_security_group_id
 
-  vpc_security_group_ids = [my_security_group.id]
+  maintenance_window              = "Mon:00:00-Mon:03:00"
+  backup_window                   = "03:00-06:00"
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  create_cloudwatch_log_group     = true
 
-  maintenance_window = "Mon:00:00-Mon:03:00"
-  backup_window      = "03:00-06:00"
+  backup_retention_period = 1
+  skip_final_snapshot     = true
+  deletion_protection     = false
 
-  # Enhanced Monitoring - see example for details on how to create the role
-  # by yourself, in case you don't want to create it automatically
-  monitoring_interval    = "30"
-  monitoring_role_name   = "MyRDSMonitoringRole"
-  create_monitoring_role = true
-
-  tags = {
-    Owner       = "user"
-    Environment = "dev"
-  }
-
-  # DB subnet group
-  create_db_subnet_group = true
-  subnet_ids             = [aws_subnet.my_public_subnet]
-
-  # DB parameter group
-  /* family = "mysql5.7" */
-
-  # DB option group
-  major_engine_version = "5.7"
-
-  # Database Deletion Protection
-  deletion_protection = true
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 7
+  create_monitoring_role                = true
+  monitoring_interval                   = 60
+  monitoring_role_name                  = "example-monitoring-role-name"
+  monitoring_role_use_name_prefix       = true
+  monitoring_role_description           = "Description for monitoring role"
 
   parameters = [
     {
-      name  = "character_set_client"
-      value = "utf8mb4"
+      name  = "autovacuum"
+      value = 1
     },
     {
-      name  = "character_set_server"
-      value = "utf8mb4"
+      name  = "client_encoding"
+      value = "utf8"
     }
   ]
 
-  options = [
-    {
-      option_name = "MARIADB_AUDIT_PLUGIN"
-
-      option_settings = [
-        {
-          name  = "SERVER_AUDIT_EVENTS"
-          value = "CONNECT"
-        },
-        {
-          name  = "SERVER_AUDIT_FILE_ROTATIONS"
-          value = "37"
-        },
-      ]
-    },
-  ]
 }
