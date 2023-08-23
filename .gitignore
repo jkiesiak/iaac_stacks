@@ -1,4 +1,7 @@
 .terraform
 variables.tfvars
 run-terraform.sh
-        
+terraform/main.tf
+.idea
+venv
+TODO.txt

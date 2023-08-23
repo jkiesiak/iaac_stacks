@@ -14,10 +14,12 @@ module "db" {
 
   db_name  = "PostgreSql1"
   username = "postgres1"
-  port     = 5432
+  password = random_password.rds_password.result
+
+  port = 5432
 
   iam_database_authentication_enabled = true
-#  db_subnet_group_name   = module.vpc.database_subnet_group
+  #  db_subnet_group_name   = module.vpc.database_subnet_group
   vpc_security_group_ids = module.vpc.default_vpc_default_security_group_id
 
   maintenance_window              = "Mon:00:00-Mon:03:00"
@@ -48,4 +50,23 @@ module "db" {
     }
   ]
 
+}
+
+resource "random_password" "rds_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*-_=+[]{}<>:?"
+}
+
+resource "null_resource" "rds_setup_1" {
+  # We expect psql to be installed to execute SQL commands at the end of terraform apply.
+  provisioner "local-exec" {
+    command = "psql --echo-queries -h \"${module.db.db_instance_endpoint}\" -U \"${module.db.db_instance_username}\" postgres1 -f ${path.module}/schema.sql -v base_name=\"${local.database_name}\""
+    environment = {
+      PGPASSWORD = nonsensitive(random_password.rds_password.result)
+    }
+  }
+  triggers = {
+    always_run = timestamp()
+  }
 }
