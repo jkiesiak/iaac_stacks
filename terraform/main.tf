@@ -10,7 +10,6 @@ terraform {
 }
 
 provider "aws" {
-  region                   = "eu-west-2"
-  profile                  = "joanna_kiesiak"
-  shared_credentials_files = ["/Users/joannakiesiak/.aws/credentials"]
+  region  = "eu-west-1"
+  profile = "bigindustries"
 }

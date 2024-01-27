@@ -1,7 +1,10 @@
 .terraform
 variables.tfvars
 run-terraform.sh
+delete-terraform.sh
 terraform/main.tf
 .idea
 venv
 TODO.txt
+terraform/builds/
+terraform/terraform.tfstate.d/

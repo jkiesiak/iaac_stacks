@@ -1,5 +1,5 @@
 locals {
-  name_alias    = "joanna-pipeline"
+  name_alias    = replace(terraform.workspace, "_", "-")
   database_name = "database"
 }
 
@@ -13,4 +13,10 @@ variable "rest_api_name" {
   type        = string
   description = "Name of the API Gateway created"
   default     = "rest_api"
+}
+
+variable "region_aws" {
+  type        = string
+  description = "Name of the region"
+  default     = "eu-west-1"
 }

@@ -1,1 +1,0 @@
-{"filename": "builds/6b738764a8a5fca35c08f117acacca72d255b24bfd54911f91952403d922720e.zip", "runtime": "python3.10", "artifacts_dir": "builds", "build_plan": [["poetry", "python3.10", "../lambda/", null], ["zip", "../lambda/", null]]}
