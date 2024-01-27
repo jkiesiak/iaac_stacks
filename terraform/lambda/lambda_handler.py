@@ -16,38 +16,29 @@ db_name = os.environ.get("your-database-name")
 user_name = os.environ.get("your-username")
 password = os.environ.get("your-password")
 
+
 def lambda_function(event, context, s3_bucket_name_hardcoded: str):
     s3 = boto3.client("s3", region_name="eu-west-2")
     file_name = "customers.json"
     if os.path.getsize(file_name) == 0:
         print("File is empty!")
-        return {
-            "statusCode": 400,
-            "body": "JSON file is empty"
-        }
+        return {"statusCode": 400, "body": "JSON file is empty"}
 
     with open(file_name, "rb") as local_file:
         json_string = local_file.read()
         try:
             json_data = json.loads(json_string)
         except json.JSONDecodeError as e:
-            return {
-            "statusCode": 400,
-            "body": f"Invalid JSON: {str(e)}"
-            }
+            return {"statusCode": 400, "body": f"Invalid JSON: {str(e)}"}
 
-    s3.put_object(
-        Bucket=s3_bucket_name_hardcoded,
-        Key=file_name,
-        Body=json_string
-    )
+    s3.put_object(Bucket=s3_bucket_name_hardcoded, Key=file_name, Body=json_string)
 
     return {
         "statusCode": 200,
         "body": json.dumps("Data inserted into s3"),
     }
 
- # Specify your RDS connection details
+    # Specify your RDS connection details
     rds_host = "your-rds-hostname"
     db_name = "your-database-name"
     user_name = "your-username"
@@ -59,17 +50,13 @@ def lambda_function(event, context, s3_bucket_name_hardcoded: str):
 
     # Initialize RDS connection
     conn = psycopg2.connect(
-        host=rds_host,
-        port=port,
-        database=db_name,
-        user=user_name,
-        password=password
+        host=rds_host, port=port, database=db_name, user=user_name, password=password
     )
 
     # Initialize S3 and download the file
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     obj = s3.get_object(Bucket=s3_bucket, Key=file_key)
-    file_content = obj['Body'].read().decode('utf-8')
+    file_content = obj["Body"].read().decode("utf-8")
 
     # Parse CSV content using pandas
     df = pd.read_csv(StringIO(file_content))
@@ -85,13 +72,12 @@ def lambda_function(event, context, s3_bucket_name_hardcoded: str):
     # conn.close()
 
     return {
-        'statusCode': 200,
-        'body': 'File successfully loaded into PostgreSQL table.'
+        "statusCode": 200,
+        "body": "File successfully loaded into PostgreSQL table.",
     }
 
 
 if __name__ == "__main__":
 
     s3_bucket_name_hardcoded = "bucket-application-joa-test1"
-    lambda_function(s3_bucket_name_hardcoded = s3_bucket_name_hardcoded)
-
+    lambda_function(s3_bucket_name_hardcoded=s3_bucket_name_hardcoded)
