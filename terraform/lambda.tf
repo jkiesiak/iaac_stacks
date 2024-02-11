@@ -1,5 +1,5 @@
 resource "aws_iam_role" "lambda_role" {
-  name               = "terraform_aws_lambda_role"
+  name               = "terraform_aws_lambda_role-${local.name_alias}"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -21,7 +21,7 @@ EOF
 
 resource "aws_iam_policy" "iam_policy_for_lambda" {
 
-  name        = "aws_iam_policy_for_terraform_aws_lambda_role"
+  name        = "aws_iam_policy_for_terraform_aws_lambda_role-${local.name_alias}"
   path        = "/"
   description = "AWS IAM Policy for managing aws lambda role"
   policy      = <<EOF
@@ -32,11 +32,14 @@ resource "aws_iam_policy" "iam_policy_for_lambda" {
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+          "rds:*",
+"s3:PutObject"
       ],
-      "Resource": "arn:aws:logs:*:*:*",
+      "Resource": "*",
       "Effect": "Allow"
     }
+
   ]
 }
 EOF
@@ -57,21 +60,24 @@ data "archive_file" "zip_the_python_code" {
   output_path = "${path.module}/lambda/lambda_handler.zip"
 }
 
-# Create a lambda function
-# In terraform ${path.module} is the current directory.
 resource "aws_lambda_function" "terraform_lambda_func" {
   filename      = "${path.module}/lambda/lambda_handler.zip"
-  function_name = "Test-Lambda-Function"
+  function_name = "Test-Lambda-Function-${local.name_alias}"
   role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda_handler.lambda_function"
-  runtime       = "python3.8"
+  handler       = "lambda_handler.lambda_handler"
+  runtime       = "python3.9"
   depends_on    = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  architectures = ["arm64"]
+
+  ephemeral_storage {
+    size = 10240 # Min 512 MB and the Max 10240 MB
+  }
 
   environment {
     variables = {
-      S3_BUCKET_NAME = "${aws_s3_bucket.s3_bucket.bucket}",
-      HOST           = "${aws_db_instance.rds.address}",
-      #      USER =
+      S3_IN_BUCKET_NAME = "${aws_s3_bucket.s3_bucket.bucket}",
+      RDS_HOST          = "${aws_db_instance.rds.address}",
+      RDS_password      = "${aws_db_instance.rds.password}",
     }
   }
 }
