@@ -4,7 +4,7 @@ resource "aws_db_instance" "rds" {
   storage_encrypted = true
   engine            = "postgres"
   # https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-versions.html#postgresql-versions-version153
-  engine_version                        = "15.3"
+  engine_version                        = "15.5"
   instance_class                        = "db.t3.micro"
   identifier                            = local.name_alias
   username                              = "postgres"
@@ -35,7 +35,7 @@ resource "random_password" "rds_password" {
 }
 
 resource "aws_ssm_parameter" "rds_password_parameter" {
-  name  = "/rds_password"
+  name  = "/rds_password-${local.name_alias}"
   type  = "SecureString"
   value = random_password.rds_password.result
 
