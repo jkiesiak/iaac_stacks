@@ -1,10 +1,12 @@
-### Stacks have been implemented to show off 
+# Infra Stacks 
 
-# infra_stacks
-In this project, we will be focusing on the implementation of different Infrastructure as Code tools, 
-specifically Terraform, to provision and manage infrastructure resources. 
-The objective of this project is to gain hands-on experience with IaC practices, 
-enhance your understanding of cloud infrastructure provisioning, and streamline the deployment process.
+## General
+In this project, we will focus on the implementation of various Infrastructure as Code (IaC) tools, 
+to provision and manage infrastructure resources. The objective of this project is to gain hands-on experience with IaC 
+practices, enhance our understanding of cloud infrastructure provisioning, and streamline the deployment process.
+
+### Terraform
+Available under directory ./terraform
 
 To set up stack in AWS:
 ```bash
@@ -17,3 +19,15 @@ To destroy stack:
 terraform -chdir=./terraform destroy 
 ```
 
+how to build docker image 
+```bash
+export AWS_PROFILE=big_industries
+aws sso login
+
+docker/build.sh
+docker/tag.sh
+docker/login.sh
+docker/push.sh
+export AWS_ACCESS_KEY_ID=AKIAZLJ57IZSERX5IHON
+export AWS_SECRET_ACCESS_KEY=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
+```
