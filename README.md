@@ -21,13 +21,11 @@ terraform -chdir=./terraform destroy
 
 how to build docker image 
 ```bash
-export AWS_PROFILE=big_industries
+export AWS_PROFILE=profile
 aws sso login
 
 docker/build.sh
 docker/tag.sh
 docker/login.sh
 docker/push.sh
-export AWS_ACCESS_KEY_ID=AKIAZLJ57IZSERX5IHON
-export AWS_SECRET_ACCESS_KEY=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
 ```
