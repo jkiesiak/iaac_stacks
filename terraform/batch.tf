@@ -130,8 +130,29 @@ resource "aws_batch_job_queue" "sample_job_queue" {
   ]
 }
 
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name               = "tf-test-batch-exec-role-${local.name_alias}"
+  assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
+}
+
+data "aws_iam_policy_document" "assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
 resource "aws_batch_job_definition" "sample_job_definition" {
-  name = "sample-job-definition2-${local.name_alias}"
+  name = "sample-job-definition-3-${local.name_alias}"
   type = "container"
   #  platform_capabilities = ["FARGATE"]
 
@@ -141,7 +162,11 @@ resource "aws_batch_job_definition" "sample_job_definition" {
     vcpus   = 1
     command = ["python", "hello_world.py"]
 
-    jobRoleArn : aws_iam_role.aws_batch_execution_role.arn,
+    jobRoleArn = aws_iam_role.aws_batch_execution_role.arn
+#    fargatePlatformConfiguration = {
+#      platformVersion = "LATEST"
+#    }
+
     logConfiguration : {
       logDriver : "awslogs",
       options : {
@@ -150,5 +175,7 @@ resource "aws_batch_job_definition" "sample_job_definition" {
         awslogs-stream-prefix : "${local.name_alias}"
       }
     }
+    executionRoleArn = aws_iam_role.ecs_task_execution_role.arn
+
   })
 }
