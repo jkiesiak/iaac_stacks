@@ -1,6 +1,9 @@
+data "aws_caller_identity" "current" {}
+
 locals {
   name_alias    = replace(terraform.workspace, "_", "-")
   database_name = "database"
+  account_id    = data.aws_caller_identity.current.account_id
 }
 
 variable "is_development" {
