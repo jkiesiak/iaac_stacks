@@ -11,7 +11,7 @@ resource "aws_iam_role" "ecs_instance_role" {
       {
         Action = "sts:AssumeRole",
         Principal = {
-          Service = "ec2.amazonaws.com",
+          Service = ["ec2.amazonaws.com", "ecs.amazonaws.com"]
         },
         Effect = "Allow",
         Sid    = "",
@@ -163,9 +163,9 @@ resource "aws_batch_job_definition" "sample_job_definition" {
     command = ["python", "hello_world.py"]
 
     jobRoleArn = aws_iam_role.aws_batch_execution_role.arn
-#    fargatePlatformConfiguration = {
-#      platformVersion = "LATEST"
-#    }
+    #    fargatePlatformConfiguration = {
+    #      platformVersion = "LATEST"
+    #    }
 
     logConfiguration : {
       logDriver : "awslogs",
