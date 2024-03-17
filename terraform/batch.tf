@@ -79,7 +79,7 @@ resource "aws_batch_job_definition" "sample_job_definition" {
   platform_capabilities = ["FARGATE"]
 
   container_properties = jsonencode({
-    image   = "${aws_ecr_repository.my_repository.repository_url}:v0.1.4"
+    image   = "${aws_ecr_repository.my_repository.repository_url}:v0.1.6"
     command = ["python", "lambda/hello_world.py"]
 
     jobRoleArn = aws_iam_role.aws_batch_service_role.arn
@@ -99,7 +99,24 @@ resource "aws_batch_job_definition" "sample_job_definition" {
         value = "512"
       }
     ]
-
+    environment = [
+      {
+        name  = "RDS_HOST"
+        value = "${aws_db_instance.rds.address}"
+      },
+      {
+        name  = "RDS_PASSWORD"
+        value = "${random_password.rds_password}"
+      },
+      {
+        name  = "S3_BUCKET_NAME"
+        value = "${aws_s3_bucket.s3_bucket.bucket}"
+      },
+      {
+        name  = "SQS_QUEUE_URL"
+        value = "${aws_batch_job_queue.sample_job_queue.name}"
+      }
+    ]
     logConfiguration : {
       logDriver : "awslogs",
       options : {
