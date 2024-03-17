@@ -1,12 +1,11 @@
 resource "aws_db_instance" "rds" {
-  allocated_storage = "50"
-  storage_type      = "gp2"
-  storage_encrypted = true
-  engine            = "postgres"
-  # https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-versions.html#postgresql-versions-version153
+  allocated_storage                     = "50"
+  storage_type                          = "gp2"
+  storage_encrypted                     = true
+  engine                                = "postgres"
   engine_version                        = "15.5"
   instance_class                        = "db.t3.micro"
-  identifier                            = local.name_alias
+  identifier                            = "rds-database-${local.name_alias}"
   username                              = "postgres"
   password                              = random_password.rds_password.result
   skip_final_snapshot                   = var.is_development
@@ -21,11 +20,10 @@ resource "aws_db_instance" "rds" {
   publicly_accessible                   = true
   copy_tags_to_snapshot                 = true
   multi_az                              = true
-  #  monitoring_interval                   = 30
-  vpc_security_group_ids = [aws_security_group.security_group.id]
-  db_subnet_group_name   = aws_db_subnet_group.rds_subnets_group.id
+  vpc_security_group_ids                = [aws_security_group.epc_security_endpoints.id]
+  db_subnet_group_name                  = aws_db_subnet_group.rds_subnet_group.name
 
-  depends_on = [aws_vpc.my_vpc]
+  depends_on = [module.vpc]
 }
 
 resource "random_password" "rds_password" {
@@ -57,9 +55,4 @@ resource "null_resource" "rds_setup" {
   }
 }
 
-resource "aws_db_subnet_group" "rds_subnets_group" {
-  name        = "${local.name_alias}-rds"
-  description = "RDS subnet group for Magic Star RDS containing public subnets."
-  subnet_ids  = [aws_subnet.subnet_public_v1.id, aws_subnet.subnet_public_v2.id]
-}
 
