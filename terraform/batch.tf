@@ -51,7 +51,7 @@ resource "aws_batch_compute_environment" "sample_compute_env" {
   compute_environment_name = "sample-compute-environment-${local.name_alias}"
   compute_resources {
     type               = "FARGATE"
-    security_group_ids = [module.vpc.default_security_group_id]
+    security_group_ids = [aws_security_group.epc_security_endpoints.id]
     subnets            = [for subnet in module.vpc.public_subnets : subnet]
     max_vcpus          = 16
 
@@ -74,7 +74,7 @@ resource "aws_batch_job_queue" "sample_job_queue" {
 }
 
 resource "aws_batch_job_definition" "sample_job_definition" {
-  name                  = "sample-job-definition-5-${local.name_alias}"
+  name                  = "job-definition-${local.name_alias}"
   type                  = "container"
   platform_capabilities = ["FARGATE"]
 
@@ -101,26 +101,26 @@ resource "aws_batch_job_definition" "sample_job_definition" {
     ]
     environment = [
       {
-        name  = "RDS_HOST"
-        value = "${aws_db_instance.rds.address}"
+        name  = "RDS_HOST",
+        value = aws_db_instance.rds.address
       },
       {
-        name  = "RDS_PASSWORD"
-        value = "${random_password.rds_password}"
+        name  = "RDS_PASSWORD",
+        value = random_password.rds_password.result
       },
       {
-        name  = "S3_BUCKET_NAME"
-        value = "${aws_s3_bucket.s3_bucket.bucket}"
+        name  = "S3_BUCKET_NAME",
+        value = aws_s3_bucket.s3_bucket.bucket
       },
       {
-        name  = "SQS_QUEUE_URL"
-        value = "${aws_batch_job_queue.sample_job_queue.name}"
+        name  = "SQS_QUEUE_URL",
+        value = aws_batch_job_queue.sample_job_queue.name
       }
     ]
     logConfiguration : {
       logDriver : "awslogs",
       options : {
-        awslogs-group : aws_cloudwatch_log_group.log_group.id
+        awslogs-group : aws_cloudwatch_log_group.log_group.name
         awslogs-region : var.region_aws,
         awslogs-stream-prefix : local.name_alias
       }
