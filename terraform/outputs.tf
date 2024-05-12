@@ -1,11 +1,3 @@
-output "output_sqs_queue" {
-  value = aws_batch_job_queue.sample_job_queue.name
-}
-
-output "output_s3_input_bucket" {
-  value = aws_s3_bucket.s3_bucket.id
-}
-
 output "output_rds_host" {
   value = aws_db_instance.rds.address
 }
@@ -21,4 +13,8 @@ output "output_security_group_id" {
 
 output "output_public_subnets" {
   value = module.vpc.public_subnets
+}
+
+output "parameter_rds_password" {
+  value = aws_ssm_parameter.rds_password_parameter.name
 }

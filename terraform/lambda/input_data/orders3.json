@@ -1,0 +1,32 @@
+[
+    {
+        "order_id": 11,
+        "order_date": "2023-05-10",
+        "total_amount": 245.90,
+        "customer_id": 45
+    },
+    {
+        "order_id": 12,
+        "order_date": "2023-05-11",
+        "total_amount": 782.45,
+        "customer_id": 11
+    },
+    {
+        "order_id": 13,
+        "order_date": "2023-05-12",
+        "total_amount": 39.99,
+        "customer_id": 11
+    },
+    {
+        "order_id": 14,
+        "order_date": "2023-05-13",
+        "total_amount": 1200.00,
+        "customer_id": 11
+    },
+    {
+        "order_id": 15,
+        "order_date": "2023-05-14",
+        "total_amount": 500.75,
+        "customer_id": 11
+    }
+]

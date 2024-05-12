@@ -23,3 +23,9 @@ variable "region_aws" {
   description = "Name of the region"
   default     = "eu-west-1"
 }
+
+variable "rds_database_name" {
+  type        = string
+  description = "Name of the database"
+  default     = "database_rds"
+}
