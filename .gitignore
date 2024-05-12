@@ -8,3 +8,10 @@ venv
 TODO.txt
 terraform/builds/
 terraform/terraform.tfstate.d/
+delete-terraform.sh
+run-terraform.sh
+lambda/.output/
+terraform/.DS_Store
+terraform/.terraform.lock.hcl
+terraform/lambda/.DS_Store
+
