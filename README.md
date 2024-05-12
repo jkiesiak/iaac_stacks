@@ -5,6 +5,10 @@ In this project, we will focus on the implementation of various Infrastructure a
 to provision and manage infrastructure resources. The objective of this project is to gain hands-on experience with IaC 
 practices, enhance our understanding of cloud infrastructure provisioning, and streamline the deployment process.
 
+## Architecture design
+![Optional Image Alt Text](docs/architecture_v2.svg)
+
+
 ### Terraform
 Available under directory ./terraform
 
