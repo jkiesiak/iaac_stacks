@@ -45,7 +45,7 @@ resource "aws_ssm_parameter" "rds_password_parameter" {
 
 resource "null_resource" "rds_setup" {
   provisioner "local-exec" {
-    command = "psql --echo-queries -h \"${aws_db_instance.rds.address}\" -U postgres -f schema.sql "
+    command = "psql --echo-queries -h \"${aws_db_instance.rds.address}\" -U postgres -f sql_schema/schema.sql"
     environment = {
       PGPASSWORD = nonsensitive(random_password.rds_password.result)
     }
@@ -54,5 +54,3 @@ resource "null_resource" "rds_setup" {
     always_run = "${timestamp()}"
   }
 }
-
-

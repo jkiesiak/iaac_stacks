@@ -1,7 +1,6 @@
-{
-  "customers": [
+[
     {
-      "customer_id": 1,
+      "customer_id": 41,
       "first_name": "John",
       "last_name": "Doe",
       "email": "john.doe@example.com",
@@ -9,7 +8,7 @@
       "address": "123 Main St, Cityville"
     },
     {
-      "customer_id": 2,
+      "customer_id": 42,
       "first_name": "Jane",
       "last_name": "Smith",
       "email": "jane.smith@example.com",
@@ -17,7 +16,7 @@
       "address": "456 Elm St, Townville"
     },
     {
-      "customer_id": 3,
+      "customer_id": 43,
       "first_name": "Michael",
       "last_name": "Johnson",
       "email": "michael.johnson@example.com",
@@ -25,7 +24,7 @@
       "address": "789 Oak St, Villageton"
     },
     {
-      "customer_id": 4,
+      "customer_id": 44,
       "first_name": "Emily",
       "last_name": "Brown",
       "email": "emily.brown@example.com",
@@ -33,12 +32,12 @@
       "address": "567 Pine St, Hamletville"
     },
     {
-      "customer_id": 5,
+      "customer_id": 45,
       "first_name": "David",
       "last_name": "Wilson",
       "email": "david.wilson@example.com",
       "phone": "777-888-9999",
       "address": "678 Maple St, Countryside"
     }
-  ]
-}
+]
+
