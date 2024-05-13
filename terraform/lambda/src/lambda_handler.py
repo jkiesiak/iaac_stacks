@@ -9,7 +9,6 @@ S3_EVENT_DATA = os.environ.get("S3_EVENT_DATA")
 RDS_HOST = os.environ.get("RDS_HOST")
 RDS_DB = os.environ.get("RDS_DB")
 RDS_USER = "postgres"
-RDS_PASSWORD = os.environ.get("RDS_PASSWORD")
 SSM_NAME = os.environ.get("SSM_NAME")
 
 def lambda_handler(event, context):
