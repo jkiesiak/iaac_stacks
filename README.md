@@ -9,27 +9,30 @@ practices, enhance our understanding of cloud infrastructure provisioning, and s
 ![Optional Image Alt Text](docs/architecture_v2.svg)
 
 
-### Terraform
-Available under directory ./terraform
 
-To set up stack in AWS:
+##  Terraform AWS Workspace Configuration Script
+This script `./run-terraform.sh` automates the setup of AWS and Terraform configurations, 
+simplifying the management of infrastructure with specific AWS profiles and Terraform workspaces.
+
+### Prerequisites
+Before running this script, ensure the following prerequisites are met:
+
+- AWS CLI installed and configured on your system.
+- Terraform installed and accessible from your command line.
+- An AWS profile set up on your machine that the script can utilize.
+
+### Script Parameters
+The script accepts two mandatory command-line arguments:
+
+`-p, --profile` : Specifies the AWS profile to be used for AWS operations. 
+
+`-w, --workspace`: Defines the Terraform workspace to be used or created for managing resources.
+
 ```bash
-terraform -chdir=./terraform init
-terraform -chdir=./terraform apply -auto-approve
+chmod +x run-terraform.sh 
+./run-terraform.sh -p <aws_profile> -w <workspace_name>
 ```
 
-To destroy stack:
-```bash
-terraform -chdir=./terraform destroy 
-```
-
-how to build docker image 
-```bash
-export AWS_PROFILE=profile
-aws sso login
-
-docker/build.sh
-docker/tag.sh
-docker/login.sh
-docker/push.sh
-```
+This script is intended for use by developers and administrators who manage AWS resources and Terraform 
+configurations. It streamlines the process by automating initial setup tasks, workspace management, 
+and resource deployment.
