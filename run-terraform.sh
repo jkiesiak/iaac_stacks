@@ -45,19 +45,28 @@ if [ -z "$aws_profile" ] || [ -z "$workspace_name" ]; then
     usage
 fi
 
+echo "---------- Operational step: export AWS_PROFILE to the environment ---------- "
+export AWS_PROFILE=$aws_profile
+export AWS_DEFAULT_REGION=eu-west-1
+
 # Echo the provided inputs (or insert your script's operations here)
 echo "Using AWS profile: $aws_profile"
 echo "Workspace name: $workspace_name"
 
+echo "---------- Operational step: verify AWS_PROFILE in the environment ---------- "
+if [ -z "$aws_profile" ]; then
+    echo "Error: AWS_PROFILE is not set. Please export the desired profile."
+    exit 1
+fi
 
 terraform -chdir=./terraform init
 
-echo "---------- Operational step: setup resources with workspace ---------- "
-terraform -chdir=./terraform workspace new $WORKSPACE
-terraform -chdir=./terraform workspace select $WORKSPACE
+echo "---------- Operational step: setup resources with provided workspace ---------- "
+terraform -chdir=./terraform workspace new $workspace_name
+terraform -chdir=./terraform workspace select $workspace_name
 
 echo "---------- Operational step: clean-up of the code ---------- "
 terraform -chdir=./terraform fmt
 
 echo "---------- Operational step: start all resources ---------- "
-terraform -chdir=./terraform apply -auto-approve -var is_development=true
+terraform -chdir=./terraform apply -auto-approve -var is_development=true -lock=false
