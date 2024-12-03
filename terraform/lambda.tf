@@ -79,6 +79,7 @@ resource "aws_iam_policy" "lambda_essential_policies" {
         "s3:GetObject",
         "s3:PutObject",
         "s3:ListBucket",
+        "s3:DeleteObject",
         "secretsmanager:GetSecretValue",
         "secretsmanager:DescribeSecret"
       ],
