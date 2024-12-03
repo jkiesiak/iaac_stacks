@@ -20,43 +20,11 @@ module "vpc" {
 
 }
 
-module "vpc_endpoints" {
-  source             = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  vpc_id             = module.vpc.vpc_id
-  security_group_ids = [aws_security_group.epc_security_endpoints.id]
-  endpoints = {
-    ecr_dkr = {
-      service_type = "Interface"
-      service      = "ecr.dkr"
-    }
 
-  }
-}
-
-resource "aws_security_group" "epc_security_endpoints" {
-  name   = "security-group-firewalls-${local.name_alias}"
+resource "aws_security_group" "rds_security_group" {
+  name   = "vpc-security-group-${local.name_alias}"
   vpc_id = module.vpc.vpc_id
 
-  ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
-  }
-
-  ingress {
-    from_port        = 3306
-    to_port          = 3306
-    protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
     from_port        = 5432
@@ -65,26 +33,6 @@ resource "aws_security_group" "epc_security_endpoints" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
-  ingress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port        = 0
-    to_port          = 65535
-    protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
-  }
-  ingress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
   ingress {
     from_port        = 5432
     to_port          = 5432
@@ -95,13 +43,6 @@ resource "aws_security_group" "epc_security_endpoints" {
 
 
   egress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
     from_port        = 5432
     to_port          = 5432
     protocol         = "tcp"
@@ -110,16 +51,9 @@ resource "aws_security_group" "epc_security_endpoints" {
 
   egress {
     from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port        = 0
-    to_port          = 65535
-    protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
   }
 
 }

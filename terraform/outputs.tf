@@ -8,13 +8,9 @@ output "output_rds_password" {
 }
 
 output "output_security_group_id" {
-  value = aws_security_group.epc_security_endpoints.id
+  value = aws_security_group.rds_security_group.id
 }
 
 output "output_public_subnets" {
   value = module.vpc.public_subnets
-}
-
-output "parameter_rds_password" {
-  value = aws_ssm_parameter.rds_password_parameter.name
 }

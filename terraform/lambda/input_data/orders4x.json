@@ -15,18 +15,18 @@
         "order_id": 13,
         "order_date": "2023-05-12",
         "total_amount": 39.99,
-        "customer_id": 11
+        "customer_id": 41
     },
     {
         "order_id": 14,
         "order_date": "2023-05-13",
         "total_amount": 1200.00,
-        "customer_id": 11
+        "customer_id": 42
     },
     {
         "order_id": 15,
         "order_date": "2023-05-14",
         "total_amount": 500.75,
-        "customer_id": 11
+        "customer_id": 42
     }
 ]

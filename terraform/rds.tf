@@ -20,7 +20,7 @@ resource "aws_db_instance" "rds" {
   publicly_accessible                   = true
   copy_tags_to_snapshot                 = true
   multi_az                              = true
-  vpc_security_group_ids                = [aws_security_group.epc_security_endpoints.id]
+  vpc_security_group_ids                = [aws_security_group.rds_security_group.id]
   db_subnet_group_name                  = aws_db_subnet_group.rds_subnet_group.name
 
   depends_on = [module.vpc]
@@ -32,10 +32,10 @@ resource "random_password" "rds_password" {
   override_special = "!#$%&*-_=+[]{}<>:?"
 }
 
-resource "aws_ssm_parameter" "rds_password_parameter" {
-  name  = "/rds_password-${local.name_alias}"
-  type  = "SecureString"
-  value = random_password.rds_password.result
+resource "aws_secretsmanager_secret" "rds_password_secret" {
+  name = "rds-password-${local.name_alias}"
+
+  description = "RDS password for ${local.name_alias}"
 
   tags = {
     Terraform   = "true"
@@ -43,7 +43,14 @@ resource "aws_ssm_parameter" "rds_password_parameter" {
   }
 }
 
-resource "null_resource" "rds_setup" {
+resource "aws_secretsmanager_secret_version" "rds_password_secret_version" {
+  secret_id = aws_secretsmanager_secret.rds_password_secret.id
+  secret_string = jsonencode({
+    password = random_password.rds_password.result
+  })
+}
+
+resource "null_resource" "rds_apply_schema_setup" {
   provisioner "local-exec" {
     command = "psql --echo-queries -h \"${aws_db_instance.rds.address}\" -U postgres -f sql_schema/schema.sql"
     environment = {
