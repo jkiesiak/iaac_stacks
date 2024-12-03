@@ -80,13 +80,17 @@ def lambda_handler(event, context):
                 conflict_column=conflict_column
             )
 
+            # Move object based on result
             if result:
-                logger.info(f"Successfully inserted data into {table_name}.")
+                logger.info(f"Successfully inserted data into {table_name}. Moving file to backup.")
+                move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f'backup/{file_name}')
             else:
-                logger.error(f"Failed to insert data into {table_name}.")
+                logger.error(f"Failed to insert data into {table_name}. Moving file to unprocessed.")
+                move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f'unprocessed/{file_name}')
 
         except Exception as e:
             logger.error(f"Error processing file {file_name}: {e}")
+            move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f'unprocessed/{file_name}')
             raise
 
 
@@ -163,3 +167,19 @@ def store_data_in_rds(db_host, db_port, db_user, db_password, db_name, data, tab
     except Exception as e:
         logger.error(f"Error storing data in {table_name} table: {e}")
         return False
+
+
+def move_file(s3_client, source_bucket, source_key, destination_bucket, destination_key):
+    try:
+        # Copy the file
+        s3_client.copy_object(
+            Bucket=destination_bucket,
+            CopySource={'Bucket': source_bucket, 'Key': source_key},
+            Key=destination_key
+        )
+        # Delete the original file
+        s3_client.delete_object(Bucket=source_bucket, Key=source_key)
+        logger.info(f"Successfully moved file from {source_bucket}/{source_key} to {destination_bucket}/{destination_key}.")
+    except Exception as e:
+        logger.error(f"Failed to move file {source_key} to {destination_key}: {e}")
+        raise
