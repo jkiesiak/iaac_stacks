@@ -20,44 +20,37 @@ def lambda_handler(event, context):
         raise ValueError("One or more required environment variables are missing.")
 
     secret = None
-    response = None
     secrets_client = boto3.client("secretsmanager")
     secret = get_db_password(secrets_client)
 
-    logger.info(f"Preprocessing data: {response}")
-
+    logger.info(f"Starting to process event data...")
 
     # Initialize S3 client
     s3_client = boto3.client('s3')
 
-    # Process the event
-    logger.info(f"Processing data from bucket {S3_EVENT_DATA}")
-    logger.info(f"Processing data from bucket event {event}")
     for record in event['Records']:
         file_name = record['s3']['object']['key']
-        logger.info(f"Processing following file: {file_name}")
+        logger.info(f"Processing file: {file_name}")
+        move_directory = "unprocessed"  # Default directory in case of failure
 
         try:
             response = s3_client.get_object(Bucket=S3_EVENT_DATA, Key=file_name)
             content = response['Body'].read().decode('utf-8')
             data = json.loads(content)
-            logger.info(f"Processing following content: {data}")
 
-            # Process data
-            object_stored = False
-            logger.info(f'Retrieving columns from data')
             if not data or not isinstance(data, list) or not all(isinstance(row, dict) for row in data):
                 logger.error("Invalid input: 'data' must be a list of dictionaries with uniform keys.")
                 return {
                     'statusCode': 500,
-                    'body': json.dumps('Invalid data format. Please double-check the input.')
+                    'body': json.dumps(f"Invalid data format. Please double-check the input."
+                                       f"Data = {data}")
                 }
 
-
+            # Determine the table name and column names
             columns = list(data[0].keys())
             keys = set(data[0].keys())
 
-            logger.info(f'Inferring TABLE NAME from data')
+            logger.info(f"Inferring TABLE NAME from data")
             if {"customer_id", "first_name", "last_name", "email", "phone", "address"}.issubset(keys):
                 table_name = "customers"
                 conflict_column = "customer_id"
@@ -67,6 +60,7 @@ def lambda_handler(event, context):
             else:
                 raise ValueError("Unable to determine table name. Data keys do not match known schemas.")
 
+            # Insert data into RDS
             logger.info(f"Inserting data into table {table_name}")
             result = store_data_in_rds(
                 db_host=RDS_HOST,
@@ -80,19 +74,18 @@ def lambda_handler(event, context):
                 conflict_column=conflict_column
             )
 
-            # Move object based on result
             if result:
-                logger.info(f"Successfully inserted data into {table_name}. Moving file to backup.")
-                move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f'backup/{file_name}')
+                logger.info(f"Successfully inserted data into {table_name}.")
+                move_directory = "backup"  # Change to backup directory if successful
             else:
-                logger.error(f"Failed to insert data into {table_name}. Moving file to unprocessed.")
-                move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f'unprocessed/{file_name}')
+                logger.error(f"Failed to insert data into {table_name}.")
 
         except Exception as e:
             logger.error(f"Error processing file {file_name}: {e}")
-            move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f'unprocessed/{file_name}')
-            raise
 
+        finally:
+            # Move file to the appropriate directory
+            move_file(s3_client, S3_EVENT_DATA, file_name, S3_BACKUP_DATA, f"{move_directory}/{file_name}")
 
     return {
         'statusCode': 200,
@@ -101,44 +94,18 @@ def lambda_handler(event, context):
 
 
 def get_db_password(secrets_client):
-    """
-    Generalized function to retrieve password for database.
-
-    Args:
-        secrets_client (str): Access to the Secret manager.
-
-    Returns:
-        SecretString: Returns password to the database.
-    """
     try:
         response = secrets_client.get_secret_value(SecretId=SSM_NAME)
         secret = json.loads(response['SecretString'])
         logger.info("Database secret retrieved successfully.")
         return secret['password']
     except Exception as e:
-        logger.error(f"Error retrieving secret: {secret}")
+        logger.error(f"Error retrieving secret: {e}")
         raise
 
 
 def store_data_in_rds(db_host, db_port, db_user, db_password, db_name, data, table_name, columns, conflict_column):
-    """
-    Store data in an RDS table.
-
-    Args:
-        db_host (str): Database host.
-        db_port (int): Database port.
-        db_user (str): Database username.
-        db_password (str): Database password.
-        db_name (str): Database name.
-        data (list): List of dictionaries representing the rows to insert.
-        table_name (str): Name of the target database table.
-        columns (list): List of column names for insertion.
-        conflict_column (str): Column to handle conflicts using ON CONFLICT.
-
-    Returns:
-        bool: True if data is successfully stored, False otherwise.
-    """
-    placeholders = ', '.join(['%s'] * len(columns))  # Generate placeholders dynamically
+    placeholders = ', '.join(['%s'] * len(columns))
     column_names = ', '.join(columns)
     conflict_clause = f"ON CONFLICT ({conflict_column}) DO NOTHING"
 
@@ -149,7 +116,6 @@ def store_data_in_rds(db_host, db_port, db_user, db_password, db_name, data, tab
     """
 
     try:
-        # Connect to the database
         with pg8000.connect(
             host=db_host,
             port=db_port,
@@ -158,7 +124,6 @@ def store_data_in_rds(db_host, db_port, db_user, db_password, db_name, data, tab
             database=db_name
         ) as connection:
             with connection.cursor() as cursor:
-                # Prepare data for bulk insertion
                 rows = [tuple(row[col] for col in columns) for row in data]
                 cursor.executemany(insert_query, rows)
                 connection.commit()
