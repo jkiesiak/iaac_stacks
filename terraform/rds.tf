@@ -3,7 +3,7 @@ resource "aws_db_instance" "rds" {
   storage_type                          = "gp2"
   storage_encrypted                     = true
   engine                                = "postgres"
-  engine_version                        = "15.5"
+  engine_version                        = "16.6"
   instance_class                        = "db.t3.micro"
   identifier                            = "rds-database-${local.name_alias}"
   username                              = "postgres"
