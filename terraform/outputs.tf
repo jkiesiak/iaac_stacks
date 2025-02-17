@@ -7,10 +7,6 @@ output "output_rds_password" {
   sensitive = true
 }
 
-output "output_security_group_id" {
-  value = aws_security_group.rds_security_group.id
-}
-
-output "output_public_subnets" {
-  value = module.vpc.public_subnets
+output "rest_api_url" {
+  value = aws_api_gateway_deployment.api_deployment.invoke_url
 }

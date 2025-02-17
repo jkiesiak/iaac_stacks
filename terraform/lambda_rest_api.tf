@@ -27,12 +27,11 @@ resource "aws_lambda_function" "lambda_rest_api" {
 
 # Lambda Authorizer for API Gateway
 resource "aws_api_gateway_authorizer" "custom_authorizer" {
-  name                             = "Token-autorisation-${local.name_alias}"
-  rest_api_id                      = aws_api_gateway_rest_api.rest_api.id
-  authorizer_uri                   = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
-  authorizer_result_ttl_in_seconds = 300
-  identity_source                  = "method.request.header.Authorization"
-  type                             = "TOKEN"
+  name            = "Token-autorisation-${local.name_alias}"
+  rest_api_id     = aws_api_gateway_rest_api.rest_api.id
+  authorizer_uri  = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
+  identity_source = "method.request.header.Authorization"
+  type            = "REQUEST"
 }
 
 data "archive_file" "zip_the_lambda_api_code" {
@@ -73,7 +72,7 @@ resource "aws_iam_policy" "lambda_rest_api_policy" {
         Action : [
           "secretsmanager:GetSecretValue"
         ],
-        Resource : aws_secretsmanager_secret.api_password_secret.arn
+        Resource : "arn:aws:secretsmanager:*:*:*"
       },
       # Allow Lambda to log to CloudWatch
       {

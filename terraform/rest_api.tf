@@ -44,8 +44,11 @@ resource "aws_api_gateway_method" "methods" {
   http_method   = local.http_method
   authorization = "CUSTOM"
   authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
+
   request_parameters = {
-    "method.request.header.Authorization" = true
+    "method.request.header.Authorization"    = true
+    "method.request.querystring.customer_id" = each.key == "customers" ? true : false
+    "method.request.querystring.order_id"    = each.key == "orders" ? true : false
   }
 }
 
@@ -58,8 +61,11 @@ resource "aws_api_gateway_integration" "integrations" {
   integration_http_method = "POST"
   type                    = local.integration_type
   uri                     = aws_lambda_function.lambda_rest_api.invoke_arn
+
   request_parameters = {
-    "integration.request.header.Authorization" = "method.request.header.Authorization"
+    "integration.request.header.Authorization"    = "method.request.header.Authorization"
+    "integration.request.querystring.customer_id" = "method.request.querystring.customer_id"
+    "integration.request.querystring.order_id"    = "method.request.querystring.order_id"
   }
 }
 

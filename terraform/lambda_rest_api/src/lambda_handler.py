@@ -11,12 +11,11 @@ REGION = str(os.getenv("REGION", "eu-west-1"))
 DB_NAME = os.getenv("DB_NAME")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = int(os.getenv("DB_PORT", 5432))
-
+DB_SCHEMA= "myschema1"
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Initialize Secrets Manager client
 client = boto3.client("secretsmanager", region_name=REGION)
 
 def get_db_credentials(NAME_SECRET):
@@ -36,19 +35,19 @@ def query_db(query, params):
     db_details = get_db_credentials(RDS_SECRET_NAME)
 
     try:
-        # Connect to PostgreSQL
-        conn = pg8000.native.Connection(
-            user=db_details["username"],
+        conn = pg8000.connect(
+            user="postgres",
             password=db_details["password"],
             host=DB_HOST,
             port=DB_PORT,
             database=DB_NAME
         )
+        cursor = conn.cursor()
 
-        # Execute query
-        result = conn.run(query, params)
+        cursor.execute(query, params)
+        result = cursor.fetchall()
+        cursor.close()
 
-        # Close connection
         conn.close()
 
         return result
@@ -89,68 +88,51 @@ def get_order_data(order_id):
     columns = ["order_id", "order_date", "total_amount", "customer_id", "first_name", "last_name", "email"]
     return dict(zip(columns, result[0]))
 
-
-def generate_policy(effect, method_arn):
-    """Generates an IAM policy for API Gateway."""
-    return {
-        "principalId": "user",
-        "policyDocument": {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": "execute-api:Invoke",
-                    "Effect": effect,
-                    "Resource": method_arn
-                }
-            ]
-        }
-    }
+def validate_token(token):
+    """Validates the token using AWS Secrets Manager."""
+    try:
+        stored_password = get_db_credentials(SECRET_NAME)["password"]
+        return token == stored_password
+    except Exception as e:
+        logger.error(f"Error validating token: {e}")
+        return False
 
 
 def lambda_handler(event, context):
     """Handles API Gateway requests for authentication and data retrieval."""
     try:
         logger.info(f"Received event: {json.dumps(event)}")
+
+        headers = event.get("headers", {})
+        token = headers.get("Authorization", "").strip()
+
+        if not token or not validate_token(token):
+            return {"statusCode": 403, "body": json.dumps({"error": "Unauthorized"})}
+
         params = event.get("queryStringParameters", {})
         logger.info(f"Received params: {json.dumps(params)}")
+        if not params:
+            logger.info(f"!!!!!!!!!!!!!!!!!!!!Empty params: {json.dumps(params)}")
+            return {"statusCode": 403, "body": json.dumps({"error": "!!!!!Empty params"})}
 
+        if not params:
+            return {"statusCode": 400, "body": json.dumps({"error": "Missing query parameters"})}
 
-        # Extract authorization token
-        token = event.get("authorizationToken", "").strip()
+        # Handle customer request
+        if "customer_id" in params:
+            customer_data = get_customer_data(params["customer_id"])
+            if customer_data:
+                return {"statusCode": 200, "body": json.dumps(customer_data)}
+            return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
 
-        if not token:
-            logger.warning("Authorization token missing")
-            return generate_policy("Deny", event["methodArn"])
-
-        # Get stored secret password
-        stored_password = get_db_credentials(SECRET_NAME)["password"]
-
-        logger.info(f"Received token: {token}")
-        logger.info(f"Stored password: {stored_password}")
-
-        # Validate token
-        if token != stored_password:
-            logger.warning("Unauthorized request: Invalid token")
-            return generate_policy("Deny", event["methodArn"])
-
-        # If valid token, return "Allow"
-        logger.info("Authorization successful")
-        # Handle API request logic if HTTP method is GET
-        if event.get("httpMethod") == "GET":
-            params = event.get("queryStringParameters", {})
-
-            if "order_id" in params:
-                order_data = get_order_data(params["order_id"])
-                if not order_data:
-                    return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
+        # Handle order request
+        if "order_id" in params:
+            order_data = get_order_data(params["order_id"])
+            if order_data:
                 return {"statusCode": 200, "body": json.dumps(order_data)}
+            return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
 
-            return {"statusCode": 400, "body": json.dumps({"error": "Missing required parameters"})}
-
-        return generate_policy("Allow", event["methodArn"])
 
     except Exception as e:
         logger.error(f"Error in Lambda handler: {e}")
         return {"statusCode": 500, "body": json.dumps({"error": "Internal server error"})}
-
-
