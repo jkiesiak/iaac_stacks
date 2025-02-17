@@ -61,9 +61,10 @@ def get_customer_data(customer_id):
     query = f"""
         SELECT customer_id, first_name, last_name, email, phone, address
         FROM {DB_SCHEMA}.customers
-        WHERE customer_id = :1
+        WHERE customer_id = %s
     """
     result = query_db(query, (customer_id,))
+    logger.info(f"Customer: result from db: {json.dumps(result)}")
 
     if not result:
         return None
@@ -78,9 +79,11 @@ def get_order_data(order_id):
         SELECT o.order_id, o.order_date, o.total_amount, c.customer_id, c.first_name, c.last_name, c.email
         FROM {DB_SCHEMA}.orders o
         JOIN {DB_SCHEMA}.customers c ON o.customer_id = c.customer_id
-        WHERE o.order_id = :1
+        WHERE o.order_id = %s
     """
     result = query_db(query, (order_id,))
+    logger.info(f"Order: result from db: {json.dumps(result)}")
+
 
     if not result:
         return None
