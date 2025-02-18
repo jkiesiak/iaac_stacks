@@ -3,6 +3,8 @@ import os
 import json
 import logging
 import pg8000
+from decimal import Decimal
+import datetime
 
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME")
@@ -43,14 +45,12 @@ def query_db(query, params):
             database=DB_NAME
         )
         cursor = conn.cursor()
-
         cursor.execute(query, params)
         result = cursor.fetchall()
         cursor.close()
-
         conn.close()
 
-        return result
+        return [tuple(row) for row in result]
     except Exception as e:
         logger.error(f"Database query error: {e}")
         return None
@@ -64,7 +64,7 @@ def get_customer_data(customer_id):
         WHERE customer_id = %s
     """
     result = query_db(query, (customer_id,))
-    logger.info(f"Customer: result from db: {json.dumps(result)}")
+    logger.info(f"Customer: raw result type: {type(result)}, content: {result}")
 
     if not result:
         return None
@@ -72,24 +72,36 @@ def get_customer_data(customer_id):
     columns = ["customer_id", "first_name", "last_name", "email", "phone", "address"]
     return dict(zip(columns, result[0]))
 
-
 def get_order_data(order_id):
     """Fetch order details from PostgreSQL database."""
     query = f"""
-        SELECT o.order_id, o.order_date, o.total_amount, c.customer_id, c.first_name, c.last_name, c.email
-        FROM {DB_SCHEMA}.orders o
-        JOIN {DB_SCHEMA}.customers c ON o.customer_id = c.customer_id
-        WHERE o.order_id = %s
+        SELECT order_id, order_date, total_amount, customer_id
+        FROM {DB_SCHEMA}.orders 
+        WHERE order_id = %s
     """
+
     result = query_db(query, (order_id,))
-    logger.info(f"Order: result from db: {json.dumps(result)}")
-
-
     if not result:
+        logger.info(f"This customer_id = {order_id} doesn't exist in the db")
         return None
+    logger.info(f"Customer: raw result type: {type(result)}, content: {result}")
 
-    columns = ["order_id", "order_date", "total_amount", "customer_id", "first_name", "last_name", "email"]
-    return dict(zip(columns, result[0]))
+    columns = ["order_id", "order_date", "total_amount", "customer_id"]
+
+    row = result[0]
+    order_dict = dict(zip(columns, row))
+
+    def convert_data(obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, datetime.date):
+            return obj.isoformat()
+        return obj
+
+    json_order = json.dumps(order_dict, default=convert_data)
+    logger.info(f"Order: JSON serialized data: {json_order}")
+
+    return json.dumps(order_dict, default=convert_data)
 
 def validate_token(token):
     """Validates the token using AWS Secrets Manager."""
@@ -114,9 +126,6 @@ def lambda_handler(event, context):
 
         params = event.get("queryStringParameters", {})
         logger.info(f"Received params: {json.dumps(params)}")
-        if not params:
-            logger.info(f"!!!!!!!!!!!!!!!!!!!!Empty params: {json.dumps(params)}")
-            return {"statusCode": 403, "body": json.dumps({"error": "!!!!!Empty params"})}
 
         if not params:
             return {"statusCode": 400, "body": json.dumps({"error": "Missing query parameters"})}
@@ -125,14 +134,21 @@ def lambda_handler(event, context):
         if "customer_id" in params:
             customer_data = get_customer_data(params["customer_id"])
             if customer_data:
-                return {"statusCode": 200, "body": json.dumps(customer_data)}
+                return {
+                    "statusCode": 200,
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": json.dumps(customer_data)
+                }
             return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
 
         # Handle order request
         if "order_id" in params:
             order_data = get_order_data(params["order_id"])
             if order_data:
-                return {"statusCode": 200, "body": json.dumps(order_data)}
+                return order_data
             return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
 
 

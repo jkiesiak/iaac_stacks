@@ -16,7 +16,7 @@ resource "aws_lambda_function" "lambda_rest_api" {
       RDS_SECRET_NAME = aws_secretsmanager_secret.rds_password_secret.name
       REGION          = var.region_aws
       DB_NAME         = var.rds_database_name
-      DB_HOST        = aws_db_instance.rds.address
+      DB_HOST         = aws_db_instance.rds.address
     }
   }
 

@@ -47,8 +47,8 @@ resource "aws_api_gateway_method" "methods" {
 
   request_parameters = {
     "method.request.header.Authorization"    = true
-    "method.request.querystring.customer_id" = each.key == "customers" ? true : false
-    "method.request.querystring.order_id"    = each.key == "orders" ? true : false
+    "method.request.querystring.customer_id" = false
+    "method.request.querystring.order_id"    = false
   }
 }
 
@@ -71,9 +71,48 @@ resource "aws_api_gateway_integration" "integrations" {
 
 # API Deployment
 resource "aws_api_gateway_deployment" "api_deployment" {
-  depends_on = [
-    aws_api_gateway_integration.integrations
-  ]
   rest_api_id = aws_api_gateway_rest_api.rest_api.id
   stage_name  = "prod"
+  triggers = {
+    redeploy = "${timestamp()}" # Forces a new deployment on every apply
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_api_gateway_method.methods,
+    aws_api_gateway_integration.integrations,
+    aws_api_gateway_method_response.method_responses
+  ]
+
 }
+
+# Enable Method Response (200 OK)
+resource "aws_api_gateway_method_response" "method_responses" {
+  for_each = aws_api_gateway_method.methods
+
+  rest_api_id = each.value.rest_api_id
+  resource_id = each.value.resource_id
+  http_method = each.value.http_method
+  status_code = "200"
+
+}
+
+# Configure Integration Response Mapping
+resource "aws_api_gateway_integration_response" "integration_responses" {
+  for_each = aws_api_gateway_method.methods
+
+  rest_api_id = each.value.rest_api_id
+  resource_id = each.value.resource_id
+  http_method = each.value.http_method
+  status_code = "200"
+
+  depends_on = [
+    aws_api_gateway_integration.integrations,
+    aws_api_gateway_method_response.method_responses
+  ]
+
+}
+
