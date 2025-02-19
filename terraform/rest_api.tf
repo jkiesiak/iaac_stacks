@@ -16,6 +16,9 @@ resource "aws_secretsmanager_secret_version" "api_password_secret_version" {
 
 resource "aws_api_gateway_rest_api" "rest_api" {
   name = "Rest-Api-${local.name_alias}"
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 locals {
@@ -42,11 +45,10 @@ resource "aws_api_gateway_method" "methods" {
   rest_api_id   = each.value.rest_api_id
   resource_id   = each.value.id
   http_method   = local.http_method
-  authorization = "CUSTOM"
-  authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
+  authorization = "NONE"
 
   request_parameters = {
-    "method.request.header.Authorization"    = true
+    "method.request.header.Authorization"    = false
     "method.request.querystring.customer_id" = false
     "method.request.querystring.order_id"    = false
   }
@@ -97,7 +99,9 @@ resource "aws_api_gateway_method_response" "method_responses" {
   resource_id = each.value.resource_id
   http_method = each.value.http_method
   status_code = "200"
-
+  response_models = {
+    "application/json" = "Empty"
+  }
 }
 
 # Configure Integration Response Mapping
@@ -116,3 +120,12 @@ resource "aws_api_gateway_integration_response" "integration_responses" {
 
 }
 
+# Lambda Authorizer for API Gateway
+resource "aws_api_gateway_authorizer" "custom_authorizer" {
+  name            = "Token-autorisation-${local.name_alias}"
+  rest_api_id     = aws_api_gateway_rest_api.rest_api.id
+  identity_source = "method.request.header.Authorization"
+  type            = "TOKEN"
+  authorizer_uri  = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
+
+}

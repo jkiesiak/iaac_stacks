@@ -64,13 +64,15 @@ def get_customer_data(customer_id):
         WHERE customer_id = %s
     """
     result = query_db(query, (customer_id,))
+    result = result[0]
+    columns = ["customer_id", "first_name", "last_name", "email", "phone", "address"]
+
     logger.info(f"Customer: raw result type: {type(result)}, content: {result}")
 
     if not result:
         return None
 
-    columns = ["customer_id", "first_name", "last_name", "email", "phone", "address"]
-    return dict(zip(columns, result[0]))
+    return dict(zip(columns, result))
 
 def get_order_data(order_id):
     """Fetch order details from PostgreSQL database."""
@@ -101,7 +103,7 @@ def get_order_data(order_id):
     json_order = json.dumps(order_dict, default=convert_data)
     logger.info(f"Order: JSON serialized data: {json_order}")
 
-    return json.dumps(order_dict, default=convert_data)
+    return json_order
 
 def validate_token(token):
     """Validates the token using AWS Secrets Manager."""
@@ -118,13 +120,7 @@ def lambda_handler(event, context):
     try:
         logger.info(f"Received event: {json.dumps(event)}")
 
-        headers = event.get("headers", {})
-        token = headers.get("Authorization", "").strip()
-
-        if not token or not validate_token(token):
-            return {"statusCode": 403, "body": json.dumps({"error": "Unauthorized"})}
-
-        params = event.get("queryStringParameters", {})
+        params = event["queryStringParameters"]
         logger.info(f"Received params: {json.dumps(params)}")
 
         if not params:
@@ -134,14 +130,14 @@ def lambda_handler(event, context):
         if "customer_id" in params:
             customer_data = get_customer_data(params["customer_id"])
             if customer_data:
-                return {
+                res = {
                     "statusCode": 200,
                     "headers": {
-                        "Content-Type": "application/json",
-                        "Access-Control-Allow-Origin": "*"
+                        "Content-Type": "*/*"
                     },
                     "body": json.dumps(customer_data)
                 }
+                return res
             return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
 
         # Handle order request

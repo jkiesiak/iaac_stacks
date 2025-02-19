@@ -25,14 +25,6 @@ resource "aws_lambda_function" "lambda_rest_api" {
   ]
 }
 
-# Lambda Authorizer for API Gateway
-resource "aws_api_gateway_authorizer" "custom_authorizer" {
-  name            = "Token-autorisation-${local.name_alias}"
-  rest_api_id     = aws_api_gateway_rest_api.rest_api.id
-  authorizer_uri  = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
-  identity_source = "method.request.header.Authorization"
-  type            = "REQUEST"
-}
 
 data "archive_file" "zip_the_lambda_api_code" {
   type        = "zip"
