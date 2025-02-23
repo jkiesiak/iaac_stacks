@@ -69,9 +69,6 @@ def get_customer_data(customer_id):
 
     logger.info(f"Customer: raw result type: {type(result)}, content: {result}")
 
-    if not result:
-        return None
-
     return dict(zip(columns, result))
 
 def get_order_data(order_id):
@@ -130,11 +127,9 @@ def lambda_handler(event, context):
         if "customer_id" in params:
             customer_data = get_customer_data(params["customer_id"])
             if customer_data:
+                logger.info(f"Returning customer_id {json.dumps(customer_data)}")
                 res = {
                     "statusCode": 200,
-                    "headers": {
-                        "Content-Type": "*/*"
-                    },
                     "body": json.dumps(customer_data)
                 }
                 return res
