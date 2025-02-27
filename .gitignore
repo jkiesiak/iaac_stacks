@@ -1,17 +1,24 @@
-.terraform
-variables.tfvars
-run-terraform.sh
-delete-terraform.sh
-terraform/main.tf
-.idea
-venv
-TODO.txt
+# Terraform-related files and directories
+.terraform/
+*.tfvars
+terraform.tfstate.d/
+*.terraform.lock.hcl
 terraform/builds/
-terraform/terraform.tfstate.d/
-delete-terraform.sh
-run-terraform.sh
-lambda/.output/
-terraform/.DS_Store
-terraform/.terraform.lock.hcl
-terraform/lambda/.DS_Store
 
+# IDE and Editor files
+.idea/
+.DS_Store
+
+# Python Virtual Environment
+venv/
+
+# Lambda output
+*/.output/
+*/*/.output/
+
+# Scripts (if these shouldn't be committed)
+run-terraform.sh
+delete-terraform.sh
+
+# Miscellaneous
+TODO.txt
