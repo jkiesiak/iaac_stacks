@@ -140,3 +140,24 @@ resource "aws_lambda_permission" "apigateway_lambda_token_invoke" {
   source_arn    = "${aws_api_gateway_rest_api.rest_api.execution_arn}/*"
 
 }
+
+data "aws_iam_policy_document" "lambda_logging_doc" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = ["arn:aws:logs:*:*:*"]
+  }
+}
+
+
+resource "aws_iam_policy" "lambda_logging_policy" {
+  name        = "lambda_logging_policy-${local.name_alias}"
+  path        = "/"
+  description = "IAM policy for logging from a lambda"
+  policy      = data.aws_iam_policy_document.lambda_logging_doc.json
+}
+

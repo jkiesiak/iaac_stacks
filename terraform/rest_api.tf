@@ -45,13 +45,14 @@ resource "aws_api_gateway_method" "methods" {
   rest_api_id   = each.value.rest_api_id
   resource_id   = each.value.id
   http_method   = local.http_method
-  authorization = "CUSTOM"
-  authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
+  authorization = "NONE"
+  #  authorization = "CUSTOM"
+  #  authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
 
   depends_on = [aws_api_gateway_resource.endpoints]
 
   request_parameters = {
-    "method.request.header.Authorization"    = true
+    "method.request.header.Authorization"    = false
     "method.request.querystring.customer_id" = false
     "method.request.querystring.order_id"    = false
   }
@@ -123,16 +124,6 @@ resource "aws_api_gateway_integration_response" "integration_responses" {
 
 }
 
-#resource "aws_api_gateway_authorizer" "custom_authorizer" {
-#  name        = "Token-autorisation-${local.name_alias}"
-#  rest_api_id = aws_api_gateway_rest_api.rest_api.id
-#  #    authorizer_uri         = aws_lambda_function.lambda_token_authorizer.invoke_arn
-#  authorizer_credentials = aws_iam_role.lambda_rest_api.arn
-#  identity_source        = "method.request.header.Authorization"
-#  type                   = "TOKEN"
-#  authorizer_uri         = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_token_authorizer.arn}/invocations"
-#
-#}
 
 resource "aws_api_gateway_authorizer" "custom_authorizer" {
   name                   = "Token-authorization-${local.name_alias}"
@@ -142,3 +133,35 @@ resource "aws_api_gateway_authorizer" "custom_authorizer" {
   authorizer_credentials = aws_iam_role.lambda_rest_api.arn # Ensure Lambda role is used
   identity_source        = "method.request.header.Authorization"
 }
+
+
+resource "aws_cloudwatch_log_group" "api_gateway_logs" {
+  name              = "/aws/apigateway/${aws_api_gateway_rest_api.rest_api.id}"
+  retention_in_days = 7
+}
+
+
+resource "aws_iam_policy" "api_gateway_logging_policy" {
+  name = "api-gateway-logging-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_api_gateway_logging" {
+  role       = aws_iam_role.lambda_rest_api.name
+  policy_arn = aws_iam_policy.api_gateway_logging_policy.arn
+}
+
