@@ -45,14 +45,13 @@ resource "aws_api_gateway_method" "methods" {
   rest_api_id   = each.value.rest_api_id
   resource_id   = each.value.id
   http_method   = local.http_method
-  authorization = "NONE"
-  #  authorization = "CUSTOM"
-  #  authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
 
   depends_on = [aws_api_gateway_resource.endpoints]
 
   request_parameters = {
-    "method.request.header.Authorization"    = false
+    "method.request.header.Authorization"    = true
     "method.request.querystring.customer_id" = false
     "method.request.querystring.order_id"    = false
   }
@@ -65,14 +64,10 @@ resource "aws_api_gateway_integration" "integrations" {
   resource_id             = each.value.resource_id
   http_method             = each.value.http_method
   integration_http_method = "POST"
-  type                    = local.integration_type
-  uri                     = aws_lambda_function.lambda_rest_api.invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
 
-  request_parameters = {
-    "integration.request.header.Authorization"    = "method.request.header.Authorization"
-    "integration.request.querystring.customer_id" = "method.request.querystring.customer_id"
-    "integration.request.querystring.order_id"    = "method.request.querystring.order_id"
-  }
+
 }
 
 # API Deployment
@@ -103,6 +98,11 @@ resource "aws_api_gateway_method_response" "method_responses" {
   resource_id = each.value.resource_id
   http_method = each.value.http_method
   status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+
   response_models = {
     "application/json" = "Empty"
   }
@@ -117,6 +117,10 @@ resource "aws_api_gateway_integration_response" "integration_responses" {
   http_method = each.value.http_method
   status_code = "200"
 
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+  }
+
   depends_on = [
     aws_api_gateway_integration.integrations,
     aws_api_gateway_method_response.method_responses
@@ -126,10 +130,12 @@ resource "aws_api_gateway_integration_response" "integration_responses" {
 
 
 resource "aws_api_gateway_authorizer" "custom_authorizer" {
-  name                   = "Token-authorization-${local.name_alias}"
-  rest_api_id            = aws_api_gateway_rest_api.rest_api.id
-  type                   = "TOKEN"
-  authorizer_uri         = aws_lambda_function.lambda_token_authorizer.invoke_arn
+  name           = "Token-authorization-${local.name_alias}"
+  rest_api_id    = aws_api_gateway_rest_api.rest_api.id
+  type           = "TOKEN"
+  authorizer_uri = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_token_authorizer.arn}/invocations"
+
+  #  authorizer_uri         = aws_lambda_function.lambda_token_authorizer.invoke_arn
   authorizer_credentials = aws_iam_role.lambda_rest_api.arn # Ensure Lambda role is used
   identity_source        = "method.request.header.Authorization"
 }
@@ -165,3 +171,51 @@ resource "aws_iam_role_policy_attachment" "attach_api_gateway_logging" {
   policy_arn = aws_iam_policy.api_gateway_logging_policy.arn
 }
 
+# Add this to your existing configuration
+
+# Enable CloudWatch Logs for API Gateway
+resource "aws_api_gateway_account" "api_gateway_account" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
+}
+
+# IAM Role for API Gateway to write to CloudWatch
+resource "aws_iam_role" "api_gateway_cloudwatch_role" {
+  name = "api-gateway-cloudwatch-role-${local.name_alias}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# Policy attachment for CloudWatch logging
+resource "aws_iam_role_policy_attachment" "api_gateway_cloudwatch" {
+  role       = aws_iam_role.api_gateway_cloudwatch_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+# Enable detailed logging for the API Gateway stage
+resource "aws_api_gateway_method_settings" "all" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  stage_name  = aws_api_gateway_deployment.api_deployment.stage_name
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled    = true
+    logging_level      = "INFO"
+    data_trace_enabled = true
+  }
+
+  depends_on = [
+    aws_api_gateway_account.api_gateway_account,
+    aws_api_gateway_deployment.api_deployment
+  ]
+}

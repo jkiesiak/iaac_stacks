@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "lambda_data_preprocessing" {
-  function_name = "Lambda-Function-${local.name_alias}"
+  function_name = "preprocess-data-${local.name_alias}"
 
   filename         = "${path.module}/lambda/.output/lambda_handler.zip"
   layers           = [aws_lambda_layer_version.python_pg8000_layer.arn, aws_lambda_layer_version.python_logging_layer.arn]
@@ -46,7 +46,7 @@ resource "aws_lambda_layer_version" "python_logging_layer" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name               = "aws_lambda_role-${local.name_alias}"
+  name               = "lambda_preprocess_data_role-${local.name_alias}"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -64,7 +64,7 @@ EOF
 }
 
 resource "aws_iam_policy" "lambda_essential_policies" {
-  name = "LambdaEssentialPolicies-${local.name_alias}"
+  name = "Lambda-preprocess-data-${local.name_alias}"
 
   policy = <<EOF
 {

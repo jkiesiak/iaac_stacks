@@ -71,6 +71,7 @@ def get_customer_data(customer_id):
 
     return dict(zip(columns, result))
 
+
 def get_order_data(order_id):
     """Fetch order details from PostgreSQL database."""
     query = f"""
@@ -78,29 +79,29 @@ def get_order_data(order_id):
         FROM {DB_SCHEMA}.orders 
         WHERE order_id = %s
     """
-
     result = query_db(query, (order_id,))
+
     if not result:
-        logger.info(f"This customer_id = {order_id} doesn't exist in the db")
+        logger.info(f"Order with order_id = {order_id} not found")
         return None
-    logger.info(f"Customer: raw result type: {type(result)}, content: {result}")
 
     columns = ["order_id", "order_date", "total_amount", "customer_id"]
-
     row = result[0]
     order_dict = dict(zip(columns, row))
 
-    def convert_data(obj):
-        if isinstance(obj, Decimal):
-            return float(obj)
-        if isinstance(obj, datetime.date):
-            return obj.isoformat()
-        return obj
+    # Convert non-JSON types
+    converted_dict = {}
+    for key, value in order_dict.items():
+        if isinstance(value, Decimal):
+            converted_dict[key] = float(value)
+        elif isinstance(value, datetime.date):
+            converted_dict[key] = value.isoformat()
+        else:
+            converted_dict[key] = value
 
-    json_order = json.dumps(order_dict, default=convert_data)
-    logger.info(f"Order: JSON serialized data: {json_order}")
+    logger.info(f"Order: converted data: {converted_dict}")
+    return converted_dict
 
-    return json_order
 
 def validate_token(token):
     """Validates the token using AWS Secrets Manager."""
@@ -139,10 +140,13 @@ def lambda_handler(event, context):
         if "order_id" in params:
             order_data = get_order_data(params["order_id"])
             if order_data:
-                return order_data
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps(order_data)
+                }
             return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
 
 
     except Exception as e:
         logger.error(f"Error in Lambda handler: {e}")
-        return {"statusCode": 500, "body": json.dumps({"error": "Internal server error"})}
+        return {"statusCode": 500, "body": json.dumps({"error": "Internal server error, check the logs"})}
