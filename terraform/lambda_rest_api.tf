@@ -96,11 +96,13 @@ resource "aws_iam_role_policy_attachment" "attach_policy" {
 }
 
 resource "aws_lambda_permission" "apigateway_lambda_invoke" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+  for_each = local.endpoints_list
+
+  statement_id  = "AllowExecutionFromAPIGateway-${each.key}"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda_rest_api.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.rest_api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.rest_api.execution_arn}/*/${local.http_method}${each.value}"
 }
 
 resource "aws_lambda_function" "lambda_token_authorizer" {
