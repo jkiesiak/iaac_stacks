@@ -1,7 +1,25 @@
 [
     {
-        "order_id": 20,
-        "order_date": "2024-05-10",
+        "order_id": 1,
+        "order_date": "2024-05-1",
+        "total_amount": 1.90,
+        "customer_id": 45
+    },
+        {
+        "order_id": 2,
+        "order_date": "2024-05-2",
+        "total_amount": 2.90,
+        "customer_id": 45
+    },
+        {
+        "order_id": 3,
+        "order_date": "2024-05-3",
+        "total_amount": 3.91,
+        "customer_id": 45
+    },
+        {
+        "order_id": 4,
+        "order_date": "2024-05-4",
         "total_amount": 2.90,
         "customer_id": 45
     }
