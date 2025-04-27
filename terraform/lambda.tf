@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "lambda_data_preprocessing" {
-  function_name = "preprocess-data-${local.name_alias}"
+  function_name = "lambda_insert_data_into_rds-${local.name_alias}"
 
   filename         = "${path.module}/lambda/.output/lambda_handler.zip"
   layers           = [aws_lambda_layer_version.python_pg8000_layer.arn, aws_lambda_layer_version.python_logging_layer.arn]
@@ -46,7 +46,7 @@ resource "aws_lambda_layer_version" "python_logging_layer" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name               = "lambda_preprocess_data_role-${local.name_alias}"
+  name               = "lambda_insert_data_into_rds-role-${local.name_alias}"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -64,7 +64,7 @@ EOF
 }
 
 resource "aws_iam_policy" "lambda_essential_policies" {
-  name = "Lambda-preprocess-data-${local.name_alias}"
+  name = "lambda_insert_data_into_rds-policy-${local.name_alias}"
 
   policy = <<EOF
 {
@@ -94,49 +94,4 @@ resource "aws_iam_role_policy_attachment" "attach_essential_policies_to_lambda_r
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_essential_policies.arn
 }
-
-resource "aws_s3_bucket_notification" "event_trigger" {
-  bucket = aws_s3_bucket.s3_event_data.id
-
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.lambda_data_preprocessing.arn
-    events              = ["s3:ObjectCreated:*"]
-  }
-
-  depends_on = [aws_lambda_permission.allow_s3_event_trigger]
-}
-
-resource "aws_lambda_permission" "allow_s3_event_trigger" {
-  statement_id  = "AllowExecutionFromS3"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda_data_preprocessing.function_name
-  principal     = "s3.amazonaws.com"
-  source_arn    = aws_s3_bucket.s3_event_data.arn
-}
-
-resource "aws_security_group" "lambda_security_group" {
-  name        = "lambda-security-group-${local.name_alias}"
-  vpc_id      = module.vpc.vpc_id
-  description = "Security group for Lambda to access RDS"
-
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-}
-
-resource "aws_security_group_rule" "allow_lambda_to_rds" {
-  security_group_id        = aws_security_group.lambda_security_group.id
-  source_security_group_id = aws_security_group.rds_security_group.id
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-}
-
-
-
 
