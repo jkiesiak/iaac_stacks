@@ -23,7 +23,7 @@ experience with IaC practices, enhance our understanding of cloud infrastructure
 processes.
 
 ## Architecture
-![Optional Image Alt Text](docs/architecture_v2.svg)
+![Optional Image Alt Text](docs/architecture_v3.svg)
 
 ### Resources Used
 - **AWS Lambda**: Executes code for data processing and triggers actions based on events.
@@ -91,6 +91,7 @@ The script accepts two mandatory command-line arguments:
 
 ```bash
 ./run-terraform.sh -p <aws_profile> -w <workspace_name>
+./run-terraform.sh -p user_infra -w vol9
 ```
 
 ### Clean up of provisioned resources
