@@ -70,8 +70,9 @@ resource "aws_iam_policy" "lambda_rest_api_policy" {
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents",
-          "logs:DescribeLogStreams",
-
+        "logs:DescribeLogStreams",
+        "rds-db:connect",
+        "rds-data:ExecuteStatement",
         "s3:GetObject",
         "s3:PutObject",
         "s3:ListBucket",
@@ -96,14 +97,21 @@ resource "aws_iam_role_policy_attachment" "attach_policy" {
 }
 
 resource "aws_lambda_permission" "apigateway_lambda_invoke" {
-  for_each = local.endpoints_list
+  for_each = {
+    for pair in setproduct(local.http_methods, keys(local.endpoints_list)) :
+    "${pair[0]}-${pair[1]}" => {
+      method = pair[0]
+      path   = local.endpoints_list[pair[1]]
+    }
+  }
 
   statement_id  = "AllowExecutionFromAPIGateway-${each.key}"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda_rest_api.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.rest_api.execution_arn}/*/${local.http_method}${each.value}"
+  source_arn    = "${aws_api_gateway_rest_api.rest_api.execution_arn}/*/${each.value.method}${each.value.path}"
 }
+
 
 resource "aws_lambda_function" "lambda_token_authorizer" {
   function_name    = "lambda-token-authorizer-${local.name_alias}"
