@@ -1,36 +1,59 @@
 import os
 import json
 import logging
+import boto3
+
+# Environment variables
+API_GATEWAY_TOKEN = os.environ.get('API_GATEWAY_TOKEN')
+REGION = os.environ.get('REGION')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+client = boto3.client("secretsmanager", region_name=REGION)
+
+
 def lambda_handler(event, context):
-    logger.info("Received API Gateway request")
+    if not all([API_GATEWAY_TOKEN, REGION]):
+        raise ValueError("API_GATEWAY_TOKEN required environment variable is missing.")
 
-    # Retrieve expected token from environment
-    EXPECTED_TOKEN = os.environ.get('AUTH_TOKEN')
-
-    if not EXPECTED_TOKEN:
-        logger.error("AUTH_TOKEN environment variable is not set")
-        raise ValueError("Environment variable AUTH_TOKEN is not set")
+    logger.info("Getting database crendentials...")
+    correct_password = return_password_based_on_secret(API_GATEWAY_TOKEN)
+    logger.info(f"event = {event}")
 
     # Extract and normalize token
-    auth_header = event.get('authorizationToken', '').strip().split()
+    if 'authorizationToken' in event:
+        token_value = event['authorizationToken']
 
-    if auth_header:
-        token = auth_header[-1] # token is always the last str
-    else:
-        logger.warning("Invalid Authorization header format")
+        if isinstance(token_value, str):
+            # If string, clean it and take the last part
+            auth_token = token_value.strip().split()[-1]
+        elif isinstance(token_value, list) and len(token_value) > 0:
+            # If list, take the first element and clean it
+            auth_token = str(token_value[0]).strip()
+
+    if not auth_token:
+        logger.warning("Missing Authorization token")
         return generate_policy('user', 'Deny', event.get('methodArn', '*'))
 
     # Validate authorization
-    if token == EXPECTED_TOKEN:
+    if auth_token == correct_password:
         logger.info("Authorization successful")
         return generate_policy('user', 'Allow', event['methodArn'])
 
     logger.warning("Authorization failed: Invalid token")
     return generate_policy('user', 'Deny', event['methodArn'])
+
+
+def return_password_based_on_secret(NAME_SECRET):
+    try:
+        response = client.get_secret_value(SecretId=NAME_SECRET)
+        secret = json.loads(response["SecretString"])
+        logger.info("Database secret retrieved successfully.")
+        return secret["password"]
+    except Exception as e:
+        logger.error(f"Error retrieving secret: {e}")
+        raise
 
 
 def generate_policy(principal_id, effect, resource):
