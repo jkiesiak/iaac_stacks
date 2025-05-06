@@ -57,34 +57,57 @@ resource "aws_iam_role" "lambda_rest_api" {
   })
 }
 
+
 resource "aws_iam_policy" "lambda_rest_api_policy" {
   name = "lambda_rest_api_policy-${local.name_alias}"
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogStreams",
-          "rds-db:connect",
-          "rds-data:ExecuteStatement",
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket",
-          "s3:DeleteObject",
-          "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret",
-          "rds:DescribeDBInstances",
-          "rds:Connect",
-          "execute-api:Invoke",
-          "lambda:InvokeFunction"
+          "logs:PutLogEvents"
+        ],
+        Resource = [
+          "arn:aws:logs:${var.region_aws}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/lambda-rest-api-response-${local.name_alias}:*"
         ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource = [
+          aws_secretsmanager_secret.api_password_secret.arn,
+          aws_secretsmanager_secret.rds_password_secret.arn
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "rds-db:connect"
+        ],
+        Resource = "arn:aws:rds-db:${var.region_aws}:${data.aws_caller_identity.current.account_id}:dbuser:${aws_db_instance.rds.id}/postgres"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "rds:DescribeDBInstances",
+          "rds-data:ExecuteStatement"
+        ],
         Resource = "*"
-      }
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "lambda:InvokeFunction"
+        ],
+        Resource = "*"
+      },
     ]
   })
 }
