@@ -66,32 +66,56 @@ EOF
 resource "aws_iam_policy" "lambda_essential_policies" {
   name = "lambda_insert_data_into_rds-policy-${local.name_alias}"
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:ListBucket",
-        "s3:DeleteObject",
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:DescribeSecret"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      # Basic Lambda execution permissions
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = [
+          "arn:aws:logs:${var.region_aws}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/lambda_insert_data_into_rds-${local.name_alias}:*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          aws_s3_bucket.s3_event_data.arn,
+          "${aws_s3_bucket.s3_event_data.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "rds-data:ExecuteStatement",
+          "rds-data:BatchExecuteStatement",
+          "rds-db:connect"
+        ],
+        Resource = [
+          aws_db_instance.rds.arn
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource = aws_secretsmanager_secret.rds_password_secret.arn
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "attach_essential_policies_to_lambda_role" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_essential_policies.arn
 }
-

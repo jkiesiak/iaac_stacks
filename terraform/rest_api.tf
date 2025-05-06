@@ -26,7 +26,7 @@ locals {
     "orders"    = "/orders"
     "customers" = "/customers"
   }
-  http_method      = "GET"
+  http_methods     = ["GET", "PUT"]
   integration_type = "AWS_PROXY"
 }
 
@@ -40,15 +40,21 @@ resource "aws_api_gateway_resource" "endpoints" {
 }
 
 resource "aws_api_gateway_method" "methods" {
-  for_each = aws_api_gateway_resource.endpoints
+  for_each = {
+    for pair in setproduct(local.http_methods, keys(aws_api_gateway_resource.endpoints)) :
+    "${pair[1]}-${pair[0]}" => {
+      http_method  = pair[0]
+      endpoint_key = pair[1]
+      resource_id  = aws_api_gateway_resource.endpoints[pair[1]].id
+      rest_api_id  = aws_api_gateway_resource.endpoints[pair[1]].rest_api_id
+    }
+  }
 
   rest_api_id   = each.value.rest_api_id
-  resource_id   = each.value.id
-  http_method   = local.http_method
+  resource_id   = each.value.resource_id
+  http_method   = each.value.http_method
   authorization = "CUSTOM"
   authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
-
-  depends_on = [aws_api_gateway_resource.endpoints]
 
   request_parameters = {
     "method.request.header.Authorization"    = true
@@ -57,18 +63,18 @@ resource "aws_api_gateway_method" "methods" {
   }
 }
 
+
 resource "aws_api_gateway_integration" "integrations" {
   for_each = aws_api_gateway_method.methods
 
   rest_api_id             = each.value.rest_api_id
   resource_id             = each.value.resource_id
   http_method             = each.value.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
+  integration_http_method = "POST" # AWS Proxy integration
+  type                    = local.integration_type
   uri                     = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
-
-
 }
+
 
 # API Deployment
 resource "aws_api_gateway_deployment" "api_deployment" {
@@ -90,7 +96,6 @@ resource "aws_api_gateway_deployment" "api_deployment" {
 
 }
 
-# Enable Method Response (200 OK)
 resource "aws_api_gateway_method_response" "method_responses" {
   for_each = aws_api_gateway_method.methods
 
@@ -108,7 +113,6 @@ resource "aws_api_gateway_method_response" "method_responses" {
   }
 }
 
-# Configure Integration Response Mapping
 resource "aws_api_gateway_integration_response" "integration_responses" {
   for_each = aws_api_gateway_method.methods
 
@@ -130,14 +134,13 @@ resource "aws_api_gateway_integration_response" "integration_responses" {
 
 
 resource "aws_api_gateway_authorizer" "custom_authorizer" {
-  name           = "Token-authorization-${local.name_alias}"
-  rest_api_id    = aws_api_gateway_rest_api.rest_api.id
-  type           = "TOKEN"
-  authorizer_uri = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_token_authorizer.arn}/invocations"
-
-  #  authorizer_uri         = aws_lambda_function.lambda_token_authorizer.invoke_arn
-  authorizer_credentials = aws_iam_role.lambda_rest_api.arn # Ensure Lambda role is used
-  identity_source        = "method.request.header.Authorization"
+  name                             = "Token-authorization-${local.name_alias}"
+  rest_api_id                      = aws_api_gateway_rest_api.rest_api.id
+  type                             = "TOKEN"
+  authorizer_uri                   = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_token_authorizer.arn}/invocations"
+  authorizer_credentials           = aws_iam_role.lambda_rest_api.arn
+  identity_source                  = "method.request.header.Authorization"
+  authorizer_result_ttl_in_seconds = 300
 }
 
 
