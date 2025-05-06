@@ -56,6 +56,22 @@ def query_db(query, params):
         return None
 
 
+def validate_update_fields(update_fields):
+    """Validate field types and values before update"""
+    valid_fields = {
+        "first_name": str,
+        "last_name": str,
+        "email": str,
+        "phone": str,
+        "address": str
+    }
+
+    for field, value in update_fields.items():
+        if field not in valid_fields:
+            raise ValueError(f"Invalid field: {field}")
+        if not isinstance(value, valid_fields[field]):
+            raise ValueError(f"Invalid type for {field}. Expected {valid_fields[field]}")
+
 def get_customer_data(customer_id):
     """Fetch customer data from PostgreSQL database."""
     query = f"""
@@ -70,6 +86,50 @@ def get_customer_data(customer_id):
     logger.info(f"Customer: raw result type: {type(result)}, content: {result}")
 
     return dict(zip(columns, result))
+
+
+def update_customer_data(customer_id, update_fields):
+    """Update customer data with proper transaction handling"""
+    logger.info(f"Update update_fields: {update_fields}")
+    allowed_fields = {"first_name", "last_name", "email", "phone", "address"}
+    update_fields = {k: v for k, v in update_fields.items() if k in allowed_fields}
+
+    db_details = get_db_credentials(RDS_SECRET_NAME)
+    conn = None
+    try:
+        conn = pg8000.connect(
+            user="postgres",
+            password=db_details["password"],
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME
+        )
+        cursor = conn.cursor()
+
+        set_clause = ", ".join(f"{key} = %s" for key in update_fields.keys())
+        values = list(update_fields.values()) + [customer_id]
+
+        query = f"""
+            UPDATE {DB_SCHEMA}.customers
+            SET {set_clause}
+            WHERE customer_id = %s
+            RETURNING customer_id
+        """
+
+        cursor.execute(query, values)
+        result = cursor.fetchone()
+        conn.commit()  # Explicit commit
+
+        return bool(result)
+
+    except Exception as e:
+        if conn:
+            conn.rollback()  # Critical for data consistency
+        logger.error(f"Update failed: {str(e)}", exc_info=True)
+        raise
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_order_data(order_id):
@@ -105,6 +165,10 @@ def get_order_data(order_id):
 
 def validate_token(token):
     """Validates the token using AWS Secrets Manager."""
+    logger.info(f"Validating a tokem in the progress")
+    if not token or not isinstance(token, str):
+        return False
+
     try:
         stored_password = get_db_credentials(SECRET_NAME)["password"]
         return token == stored_password
@@ -114,38 +178,65 @@ def validate_token(token):
 
 
 def lambda_handler(event, context):
-    """Handles API Gateway requests for authentication and data retrieval."""
     try:
         logger.info(f"Received event: {json.dumps(event)}")
 
-        params = event["queryStringParameters"]
-        logger.info(f"Received params: {json.dumps(params)}")
+        http_method = event.get("httpMethod")
+        params = event.get("queryStringParameters") or {}
+        headers = event.get("headers") or {}
 
-        if not params:
+        token = headers.get("Authorization")
+        if not validate_token(token):
+            return {"statusCode": 401, "body": json.dumps({"error": "Unauthorized"})}
+
+        if http_method == "GET":
+            if "customer_id" in params:
+                customer_data = get_customer_data(params["customer_id"])
+                if customer_data:
+                    return {"statusCode": 200, "body": json.dumps(customer_data)}
+                return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
+
+            if "order_id" in params:
+                order_data = get_order_data(params["order_id"])
+                if order_data:
+                    return {"statusCode": 200, "body": json.dumps(order_data)}
+                return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
+
             return {"statusCode": 400, "body": json.dumps({"error": "Missing query parameters"})}
 
-        # Handle customer request
-        if "customer_id" in params:
-            customer_data = get_customer_data(params["customer_id"])
-            if customer_data:
-                logger.info(f"Returning customer_id {json.dumps(customer_data)}")
-                res = {
-                    "statusCode": 200,
-                    "body": json.dumps(customer_data)
-                }
-                return res
-            return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
 
-        # Handle order request
-        if "order_id" in params:
-            order_data = get_order_data(params["order_id"])
-            if order_data:
-                return {
-                    "statusCode": 200,
-                    "body": json.dumps(order_data)
-                }
-            return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
+        elif http_method == "PUT":
 
+            try:
+
+                body = json.loads(event["body"])
+
+                customer_id = body.get("customer_id")
+
+                update_fields = {k: v for k, v in body.items() if k != "customer_id"}
+
+                validate_update_fields(update_fields)
+                updated = update_customer_data(customer_id, update_fields)
+
+                if updated:
+                    return {
+                        "statusCode": 200,
+                        "body": json.dumps({
+                            "message": "Customer updated",
+                            "customer_id": customer_id
+                        })
+                    }
+
+                return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
+
+            except json.JSONDecodeError:
+                return {"statusCode": 400, "body": json.dumps({"error": "Invalid JSON"})}
+
+            except ValueError as ve:
+                return {"statusCode": 400, "body": json.dumps({"error": str(ve)})}
+
+        else:
+            return {"statusCode": 405, "body": json.dumps({"error": f"Method {http_method} not allowed"})}
 
     except Exception as e:
         logger.error(f"Error in Lambda handler: {e}")

@@ -5,8 +5,8 @@ resource "random_password" "api_password" {
 }
 
 resource "aws_secretsmanager_secret" "api_password_secret" {
-  name        = "api-auth-password-${local.name_alias}"
-  description = "Reat Api acess token ${local.name_alias}"
+  name        = "api-token-authorisation-${local.name_alias}"
+  description = "Reat Api access token ${local.name_alias}"
 }
 
 resource "aws_secretsmanager_secret_version" "api_password_secret_version" {
@@ -16,6 +16,7 @@ resource "aws_secretsmanager_secret_version" "api_password_secret_version" {
 
 resource "aws_api_gateway_rest_api" "rest_api" {
   name = "Rest-Api-${local.name_alias}"
+
   endpoint_configuration {
     types = ["REGIONAL"]
   }
@@ -56,11 +57,17 @@ resource "aws_api_gateway_method" "methods" {
   authorization = "CUSTOM"
   authorizer_id = aws_api_gateway_authorizer.custom_authorizer.id
 
-  request_parameters = {
-    "method.request.header.Authorization"    = true
-    "method.request.querystring.customer_id" = false
-    "method.request.querystring.order_id"    = false
-  }
+  request_parameters = merge( # make parameters optional
+    {
+      "method.request.header.Authorization" = true
+    },
+    contains(split("-", each.key), "customers") ? {
+      "method.request.querystring.customer_id" = false
+    } : {},
+    contains(split("-", each.key), "orders") ? {
+      "method.request.querystring.order_id" = false
+    } : {}
+  )
 }
 
 
@@ -70,7 +77,7 @@ resource "aws_api_gateway_integration" "integrations" {
   rest_api_id             = each.value.rest_api_id
   resource_id             = each.value.resource_id
   http_method             = each.value.http_method
-  integration_http_method = "POST" # AWS Proxy integration
+  integration_http_method = "POST"
   type                    = local.integration_type
   uri                     = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_rest_api.arn}/invocations"
 }
@@ -93,7 +100,6 @@ resource "aws_api_gateway_deployment" "api_deployment" {
     aws_api_gateway_integration.integrations,
     aws_api_gateway_method_response.method_responses
   ]
-
 }
 
 resource "aws_api_gateway_method_response" "method_responses" {
@@ -140,7 +146,7 @@ resource "aws_api_gateway_authorizer" "custom_authorizer" {
   authorizer_uri                   = "arn:aws:apigateway:${var.region_aws}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_token_authorizer.arn}/invocations"
   authorizer_credentials           = aws_iam_role.lambda_rest_api.arn
   identity_source                  = "method.request.header.Authorization"
-  authorizer_result_ttl_in_seconds = 300
+  authorizer_result_ttl_in_seconds = 0
 }
 
 
@@ -174,7 +180,6 @@ resource "aws_iam_role_policy_attachment" "attach_api_gateway_logging" {
   policy_arn = aws_iam_policy.api_gateway_logging_policy.arn
 }
 
-# Add this to your existing configuration
 
 # Enable CloudWatch Logs for API Gateway
 resource "aws_api_gateway_account" "api_gateway_account" {

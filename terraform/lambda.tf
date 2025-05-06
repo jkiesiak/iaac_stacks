@@ -46,21 +46,20 @@ resource "aws_lambda_layer_version" "python_logging_layer" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name               = "lambda_insert_data_into_rds-role-${local.name_alias}"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow"
-    }
-  ]
-}
-EOF
+  name = "lambda_insert_data_into_rds-role-${local.name_alias}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        },
+        Effect = "Allow"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_policy" "lambda_essential_policies" {
@@ -69,7 +68,6 @@ resource "aws_iam_policy" "lambda_essential_policies" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # Basic Lambda execution permissions
       {
         Effect = "Allow",
         Action = [

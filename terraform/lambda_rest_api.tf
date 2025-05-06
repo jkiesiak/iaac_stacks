@@ -5,10 +5,11 @@ resource "aws_lambda_function" "lambda_rest_api" {
   layers           = [aws_lambda_layer_version.python_pg8000_layer.arn, aws_lambda_layer_version.python_logging_layer.arn]
   source_code_hash = data.archive_file.zip_the_lambda_api_code.output_base64sha256
 
-  role    = aws_iam_role.lambda_rest_api.arn
-  handler = "lambda_handler.lambda_handler"
-  runtime = "python3.8"
-  timeout = 300
+  role        = aws_iam_role.lambda_rest_api.arn
+  handler     = "lambda_handler.lambda_handler"
+  runtime     = "python3.8"
+  timeout     = 90
+  memory_size = 512
 
   environment {
     variables = {
@@ -27,7 +28,7 @@ resource "aws_lambda_function" "lambda_rest_api" {
 
 resource "aws_cloudwatch_log_group" "lambda_rest_api_logs" {
   name              = "/aws/lambda/lambda-rest-api-response-${local.name_alias}"
-  retention_in_days = 14
+  retention_in_days = 7
 }
 
 
@@ -56,39 +57,61 @@ resource "aws_iam_role" "lambda_rest_api" {
   })
 }
 
-# IAM Policy for Lambda Permissions
+
 resource "aws_iam_policy" "lambda_rest_api_policy" {
   name = "lambda_rest_api_policy-${local.name_alias}"
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "logs:DescribeLogStreams",
-        "rds-db:connect",
-        "rds-data:ExecuteStatement",
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:ListBucket",
-        "s3:DeleteObject",
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:DescribeSecret",
-        "rds:DescribeDBInstances",
-        "rds:Connect",
-        "lambda:InvokeFunction"
-      ],
-      "Resource": "*"
-    }
-  ]
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = [
+          "arn:aws:logs:${var.region_aws}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/lambda-rest-api-response-${local.name_alias}:*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource = [
+          aws_secretsmanager_secret.api_password_secret.arn,
+          aws_secretsmanager_secret.rds_password_secret.arn
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "rds-db:connect"
+        ],
+        Resource = "arn:aws:rds-db:${var.region_aws}:${data.aws_caller_identity.current.account_id}:dbuser:${aws_db_instance.rds.id}/postgres"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "rds:DescribeDBInstances",
+          "rds-data:ExecuteStatement"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "lambda:InvokeFunction"
+        ],
+        Resource = "*"
+      },
+    ]
+  })
 }
-EOF
-}
+
 
 # Attach the policy to the IAM role
 resource "aws_iam_role_policy_attachment" "attach_policy" {
@@ -112,26 +135,3 @@ resource "aws_lambda_permission" "apigateway_lambda_invoke" {
   source_arn    = "${aws_api_gateway_rest_api.rest_api.execution_arn}/*/${each.value.method}${each.value.path}"
 }
 
-
-resource "aws_lambda_function" "lambda_token_authorizer" {
-  function_name    = "lambda-token-authorizer-${local.name_alias}"
-  filename         = "${path.module}/lambda_grant_token_access/.output/lambda_handler.zip"
-  layers           = [aws_lambda_layer_version.python_pg8000_layer.arn, aws_lambda_layer_version.python_logging_layer.arn]
-  source_code_hash = data.archive_file.zip_the_lambda_token_access.output_base64sha256
-
-  role    = aws_iam_role.lambda_rest_api.arn
-  handler = "lambda_handler.lambda_handler"
-  runtime = "python3.8"
-
-  environment {
-    variables = {
-      AUTH_TOKEN = random_password.api_password.result
-    }
-  }
-}
-
-data "archive_file" "zip_the_lambda_token_access" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda_grant_token_access/src"
-  output_path = "${path.module}/lambda_grant_token_access/.output/lambda_handler.zip"
-}
