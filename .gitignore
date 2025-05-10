@@ -22,3 +22,6 @@ delete-terraform.sh
 
 # Miscellaneous
 TODO.txt
+.venv/
+cdk.out/
+__pycache__/
