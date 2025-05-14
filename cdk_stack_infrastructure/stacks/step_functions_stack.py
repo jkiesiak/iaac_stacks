@@ -4,28 +4,43 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
     aws_s3 as s3,
+    aws_s3_notifications as s3n,
+
     aws_logs as logs,
     aws_stepfunctions as sfn,
     aws_stepfunctions_tasks as tasks,
     aws_events as events,
     aws_events_targets as targets,
+RemovalPolicy
 )
 from constructs import Construct
 
 
 class LambdaRdsStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs):
+    def __init__(self, scope: Construct, construct_id: str, name_alias: str,rds_endpoint_address, rds_secret_name,  **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
-        name_alias = "dev"
+        env = self.node.try_get_context("env")
 
-        # S3 Buckets
-        s3_event_data = s3.Bucket(self, "S3EventDataBucket")
-        s3_backup_data = s3.Bucket(self, "S3BackupDataBucket")
+        is_development = env == "prod"
+
+        s3_event_data = s3.Bucket(self, f"S3EventDataBucket-{name_alias}",
+                                  # bucket_name=f"s3-event-data-{name_alias}",
+                                  removal_policy=RemovalPolicy.DESTROY,
+                                  auto_delete_objects=True,
+                                  event_bridge_enabled=True
+                                  )
+
+
+        s3_backup_data = s3.Bucket(self, f"S3BackupDataBucket-{name_alias}",
+                                   # bucket_name=f"bucket-backup-data-{name_alias}",
+                                   removal_policy=RemovalPolicy.DESTROY,
+                                   auto_delete_objects=True
+                                   )
 
         # IAM Role for Lambda
         lambda_role = iam.Role(
-            self, "LambdaExecutionRole",
+            self, f"LambdaExecutionRole-{name_alias}",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
         )
 
@@ -61,13 +76,13 @@ class LambdaRdsStack(Stack):
             code=_lambda.Code.from_asset("lambda_insert_data_into_rds"),
             role=lambda_role,
             timeout=Duration.seconds(300),
-            function_name=f"lambda_insert_data_into_rds-{name_alias}",
+            # function_name=f"lambda_insert_data_into_rds-{name_alias}",
             layers=[pg8000_layer, logging_layer],
             environment={
                 "S3_BACKUP_DATA": s3_backup_data.bucket_name,
                 "S3_EVENT_DATA": s3_event_data.bucket_name,
-                "RDS_HOST": "<rds-host>" , # pass as param/env
-                "SSM_NAME": "<secret-name>",
+                "RDS_HOST": rds_endpoint_address , # pass as param/env
+                "SSM_NAME": rds_secret_name,
                 "RDS_DB": "<db-name>"
             }
         )
@@ -75,8 +90,8 @@ class LambdaRdsStack(Stack):
 
         # Log Group
         log_group = logs.LogGroup(
-            self, "LambdaStoreBackupLogGroup",
-            log_group_name=f"/aws/lambda/lambda_store_backup-{name_alias}",
+            self, f"LambdaStoreBackupLogGroup{name_alias}",
+            # log_group_name=f"/aws/lambda/lambda_store_backup-{name_alias}",
             retention=logs.RetentionDays.ONE_WEEK
         )
 
@@ -117,7 +132,7 @@ class LambdaRdsStack(Stack):
         # Lambda Function - lambda_store_backup
         lambda_store_backup = _lambda.Function(
             self, "LambdaStoreBackup",
-            function_name=f"lambda_store_backup-{name_alias}",
+            # function_name=f"lambda_store_backup-{name_alias}",
             code=_lambda.Code.from_asset("lambda_store_backup"),
             role=lambda_role,
 
@@ -138,25 +153,34 @@ class LambdaRdsStack(Stack):
         # Step Function Definition
         insert_task = tasks.LambdaInvoke(
             self, "InsertIntoRDS",
-            lambda_function=insert_lambda,
+            lambda_function=lambda_insert_data_into_rds,
             output_path="$.Payload"
+        ).add_retry(
+            max_attempts=3,
+            interval=Duration.seconds(2),
+            backoff_rate=2.0
         )
 
-        store_backup_task = tasks.LambdaInvoke(
+        tasks_definition = tasks.LambdaInvoke(
             self, "StoreBackup",
             lambda_function=lambda_store_backup,
             output_path="$.Payload"
+        ).add_retry(
+            max_attempts=3,
+            interval=Duration.seconds(2),
+            backoff_rate=2.0
+        ).add_catch(
+            handler=sfn.Fail(
+                self, "StoreBackupFail",
+                error="BackupFailed",
+                cause="Failed to backup file."
+            ),
+            errors=["States.ALL"],
+            result_path="$.error"
         )
 
-        definition = insert_task.add_catch(
-            sfn.Fail(self, "InsertFailure"),
-            errors=["States.ALL"],
-            result_path="$.error"
-        ).next(store_backup_task.add_catch(
-            sfn.Fail(self, "BackupFailure"),
-            errors=["States.ALL"],
-            result_path="$.error"
-        ))
+        definition = insert_task.next(tasks_definition)
+
 
         step_role = iam.Role(
             self, "StepFunctionExecutionRole",
@@ -172,7 +196,7 @@ class LambdaRdsStack(Stack):
             self, "StepFunction",
             definition=definition,
             role=step_role,
-            state_machine_name=f"file-processing-flow-{name_alias}"
+            # state_machine_name=f"file-processing-flow-{name_alias}"
         )
 
         # EventBridge Rule
@@ -188,6 +212,7 @@ class LambdaRdsStack(Stack):
         # Role to allow EventBridge to invoke Step Function
         eventbridge_role = iam.Role(
             self, "EventBridgeInvokeRole",
+            role_name=f"eventbridge-invoke-stepfunction-role-{name_alias}",
             assumed_by=iam.ServicePrincipal("events.amazonaws.com")
         )
 
