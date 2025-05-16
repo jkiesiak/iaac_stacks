@@ -6,7 +6,7 @@ from stacks.rds_stack import RdsPostgresStack
 
 app = cdk.App()
 
-name_alias = "aga"
+name_alias = "elaa"
 region_aws = "eu-west-1"
 
 vpc_stack = VpcStack(app, "VpcStack",
@@ -26,11 +26,15 @@ rds_postgres = RdsPostgresStack(app, "RDSStack",
 
 rds_endpoint_address = rds_postgres.rds_endpoint_address
 rds_secret_name = rds_postgres.rds_password_secret
+rds_instance_id = rds_postgres.rds_instance_id
+secret_arn = rds_postgres.secret_arn
 
 LambdaRdsStack(app, "LambdaRdsStack",
                name_alias=name_alias,
+               rds_instance_id = rds_instance_id,
                rds_endpoint_address=rds_endpoint_address,
-               rds_secret_name=rds_secret_name
+               rds_secret_name=rds_secret_name,
+secret_arn=secret_arn
                )
 
 app.synth()

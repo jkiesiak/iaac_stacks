@@ -17,7 +17,8 @@ from constructs import Construct
 
 
 class LambdaRdsStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, name_alias: str,rds_endpoint_address, rds_secret_name,  **kwargs):
+    def __init__(self, scope: Construct, construct_id: str,rds_instance_id,  name_alias: str,
+                 rds_endpoint_address, rds_secret_name, secret_arn,  **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
         env = self.node.try_get_context("env")
@@ -40,18 +41,65 @@ class LambdaRdsStack(Stack):
 
         # IAM Role for Lambda
         lambda_role = iam.Role(
-            self, f"LambdaExecutionRole-{name_alias}",
+            self, f"LambdaInsertDataIntoRDS-{name_alias}",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
         )
 
-        lambda_role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+        lambda_policy = iam.ManagedPolicy(
+            self, "LambdaEssentialPolicy",
+            managed_policy_name=f"lambda_insert_data_into_rds-policy-{name_alias}",
+            statements=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    resources=[
+                        f"arn:aws:logs:{self.region}:{self.account}:*"
+                    ]
+                ),
+                # S3 permissions
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "s3:GetObject",
+                        "s3:ListBucket"
+                    ],
+                    resources=[
+                        s3_event_data.bucket_arn,
+                        f"{s3_event_data.bucket_arn}/*"
+                    ]
+                ),
+                # RDS permissions
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "rds-data:ExecuteStatement",
+                        "rds-data:BatchExecuteStatement",
+                        "rds-db:connect"
+                    ],
+                    resources=[
+                        rds_instance_id
+                    ]
+                ),
+                # Secrets Manager permissions
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "secretsmanager:GetSecretValue",
+                        "secretsmanager:DescribeSecret"
+                    ],
+                    resources=[
+                        secret_arn
+                    ]
+                )
+            ]
         )
 
-        lambda_role.add_to_policy(iam.PolicyStatement(
-            actions=["s3:GetObject", "s3:ListBucket"],
-            resources=[s3_event_data.bucket_arn, f"{s3_event_data.bucket_arn}/*"]
-        ))
+        lambda_role.add_managed_policy(lambda_policy)
+
 
         # Define Lambda Layers
         pg8000_layer = _lambda.LayerVersion(
@@ -70,7 +118,7 @@ class LambdaRdsStack(Stack):
 
         # Lambda Function to insert into RDS
         lambda_insert_data_into_rds = _lambda.Function(
-            self, "InsertDataIntoRds",
+            self, f"InsertDataIntoRds-{name_alias}",
             runtime=_lambda.Runtime.PYTHON_3_8,
             handler="lambda_handler.lambda_handler",
             code=_lambda.Code.from_asset("lambda_insert_data_into_rds"),
@@ -83,26 +131,27 @@ class LambdaRdsStack(Stack):
                 "S3_EVENT_DATA": s3_event_data.bucket_name,
                 "RDS_HOST": rds_endpoint_address , # pass as param/env
                 "SSM_NAME": rds_secret_name,
-                "RDS_DB": "<db-name>"
+                "RDS_DB": "database_rds"
             }
         )
 
 
-        # Log Group
-        log_group = logs.LogGroup(
-            self, f"LambdaStoreBackupLogGroup{name_alias}",
-            # log_group_name=f"/aws/lambda/lambda_store_backup-{name_alias}",
-            retention=logs.RetentionDays.ONE_WEEK
-        )
+        # # Log Group
+        # log_group = logs.LogGroup(
+        #     self, f"LambdaStoreBackupLogGroup{name_alias}",
+        #     # log_group_name=f"/aws/lambda/lambda_store_backup-{name_alias}",
+        #     retention=logs.RetentionDays.ONE_WEEK
+        # )
 
         # IAM Role
         lambda_store_backup_role = iam.Role(
-            self, "LambdaStoreBackupRole",
+            self, f"LambdaStoreBackupRole-{name_alias}",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
         )
 
-        lambda_store_backup_policy = iam.Policy(
-            self, "LambdaStoreBackupPolicy",
+        lambda_store_backup_policy = iam.ManagedPolicy(
+            self, f"LambdaStoreBackupPolicy-{name_alias}",
+            # managed_policy_name=f"lambda_store_backup-policy-{name_alias}",
             statements=[
                 iam.PolicyStatement(
                     actions=[
@@ -111,7 +160,7 @@ class LambdaRdsStack(Stack):
                         "logs:PutLogEvents"
                     ],
                     resources=[
-                        f"arn:aws:logs:{Stack.of(self).region}:{Stack.of(self).account}:log-group:/aws/lambda/lambda_store_backup-{name_alias}:*"
+                        f"arn:aws:logs:{self.region}:{self.account}:*"
                     ]
                 ),
                 iam.PolicyStatement(
@@ -127,16 +176,16 @@ class LambdaRdsStack(Stack):
                 )
             ]
         )
-        lambda_store_backup_policy.attach_to_role(lambda_store_backup_role)
+
+        lambda_store_backup_role.add_managed_policy(lambda_store_backup_policy)
 
         # Lambda Function - lambda_store_backup
         lambda_store_backup = _lambda.Function(
-            self, "LambdaStoreBackup",
+            self, f"LambdaStoreBackup-{name_alias}",
             # function_name=f"lambda_store_backup-{name_alias}",
             code=_lambda.Code.from_asset("lambda_store_backup"),
-            role=lambda_role,
-
-        handler="lambda_handler.lambda_handler",
+            role=lambda_store_backup_role,
+            handler="lambda_handler.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_9,
             timeout=Duration.seconds(300),
             layers=[ logging_layer],
@@ -147,8 +196,6 @@ class LambdaRdsStack(Stack):
             },
         )
 
-        lambda_store_backup.node.add_dependency(log_group)
-        lambda_store_backup.node.add_dependency(lambda_store_backup_policy)
 
         # Step Function Definition
         insert_task = tasks.LambdaInvoke(

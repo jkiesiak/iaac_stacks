@@ -91,7 +91,8 @@ class RdsPostgresStack(Stack):
         )
         self.rds_endpoint_address = postgres_rds.db_instance_endpoint_address
         self.rds_password_secret = rds_password_secret.secret_name
-
+        self.rds_instance_id = postgres_rds.instance_arn
+        self.secret_arn = rds_password_secret.secret_arn
 
         # Apply database schema using a custom resource
         # schema_setup_role = iam.Role(
