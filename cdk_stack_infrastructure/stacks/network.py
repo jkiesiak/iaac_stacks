@@ -39,7 +39,7 @@ class VpcStack(Stack):
         rds_sg = ec2.SecurityGroup(self, f"RdsSecurityGroup{name_alias}",
             vpc=vpc,
             # security_group_name=f"vpc-security-group-{name_alias}",
-            allow_all_outbound=False
+            allow_all_outbound=True
         )
 
         # Ingress rules
@@ -49,6 +49,7 @@ class VpcStack(Stack):
         # Egress rules
         # rds_sg.add_egress_rule(ec2.Peer.any_ipv4(), ec2.Port.all_traffic(), "Allow all outbound IPv4")
         rds_sg.add_egress_rule(ec2.Peer.any_ipv6(), ec2.Port.tcp(5432), "Allow PostgreSQL to IPv6")
+        # rds_sg.add_egress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(5432), "Allow PostgreSQL to any_ipv4")
 
         # DB Subnet Group (using public subnets like in Terraform, though private is more typical for RDS)
         db_subnet_group = rds.CfnDBSubnetGroup(self, "DbSubnetGroup",

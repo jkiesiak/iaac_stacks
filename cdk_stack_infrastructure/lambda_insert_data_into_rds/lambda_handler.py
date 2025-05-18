@@ -81,12 +81,10 @@ def lambda_handler(event, context):
 
         if result:
             logger.info(f"Successfully inserted data into {table_name}.")
-        else:
-            logger.error(f"Failed to insert data into {table_name}.")
 
     except Exception as e:
-        logger.error(f"Error processing file {file_key}: {e}")
-        raise
+        logger.error(f"Failed to process and insert data from file {file_key}: {e}")
+        raise RuntimeError(f"Failed to process and insert data: {e}") from e
 
     return {
         'statusCode': 200,
@@ -132,7 +130,7 @@ def store_data_in_rds(db_host, db_port, db_user, db_password, db_name, data, tab
                 cursor.executemany(insert_query, rows)
                 connection.commit()
                 logger.info(f"Successfully stored {len(rows)} records in {table_name} table.")
-        return True
+
     except Exception as e:
         logger.error(f"Error storing data in {table_name} table: {e}")
-        return False
+        raise RuntimeError(f"Database insert failed: {e}") from e

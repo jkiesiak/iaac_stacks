@@ -6,15 +6,17 @@ from aws_cdk import (
     RemovalPolicy,
     CfnOutput,
     Tags,
-    custom_resources as cr,
     aws_iam as iam,
-    aws_lambda as lambda_,
+    aws_lambda as _lambda,
     Duration,
+    CustomResource
 )
 from constructs import Construct
+from aws_cdk.custom_resources import Provider
 import random
 import string
 import json
+from datetime import datetime
 
 
 class RdsPostgresStack(Stack):
@@ -68,9 +70,9 @@ class RdsPostgresStack(Stack):
             storage_encrypted=True,
             vpc=vpc,
             security_groups=[rds_security_group],
-            # vpc_subnets=ec2.SubnetSelection(
-            #     subnet_group_name=db_subnet_group.db_subnet_group_name
-            # ),
+            vpc_subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PUBLIC
+            ),
             removal_policy=RemovalPolicy.SNAPSHOT if not is_development else RemovalPolicy.DESTROY,
             deletion_protection=not is_development,
             publicly_accessible=True,
@@ -95,82 +97,69 @@ class RdsPostgresStack(Stack):
         self.secret_arn = rds_password_secret.secret_arn
 
         # Apply database schema using a custom resource
-        # schema_setup_role = iam.Role(
-        #     self,
-        #     "SchemaSetupRole",
-        #     assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
-        # )
-        #
-        # schema_setup_role.add_managed_policy(
-        #     iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
-        # )
-        #
-        # schema_setup_role.add_to_policy(
-        #     iam.PolicyStatement(
-        #         effect=iam.Effect.ALLOW,
-        #         actions=[
-        #             "secretsmanager:GetSecretValue"
-        #         ],
-        #         resources=[rds_password_secret.secret_arn]
-        #     )
-        # )
-        #
-        # # Lambda to execute PostgreSQL schema setup
-        # schema_setup_lambda = lambda_.Function(
-        #     self,
-        #     "SchemaSetupLambda",
-        #     runtime=lambda_.Runtime.PYTHON_3_9,
-        #     handler="index.handler",
-        #     code=lambda_.Code.from_inline("""
-        # raise e
-        #     """),
-        #     timeout=Duration.minutes(5),
-        #     role=schema_setup_role,
-        #     environment={
-        #         "SECRET_NAME": rds_password_secret.secret_name,
-        #         "DB_HOST": postgres_rds.db_instance_endpoint_address,
-        #     },
-        #     layers=[
-        #         lambda_.LayerVersion(
-        #             self,
-        #             "PsycopgLayer",
-        #             code=lambda_.Code.from_asset("lambda_layers/psycopg2.zip"),
-        #             compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
-        #         )
-        #     ]
-        # )
-        #
-        # # Custom resource to trigger schema setup
-        # schema_setup_provider = cr.Provider(
-        #     self,
-        #     "SchemaSetupProvider",
-        #     on_event_handler=schema_setup_lambda
-        # )
-        #
-        # schema_setup = cr.CustomResource(
-        #     self,
-        #     "SchemaSetup",
-        #     service_token=schema_setup_provider.service_token,
-        #     properties={
-        #         "Timestamp": self.node.try_get_context("deployment_timestamp") or "initial",
-        #     },
-        #     removal_policy=RemovalPolicy.RETAIN
-        # )
-        #
+        # no psql for cdk v2
+        schema_setup_role = iam.Role(
+            self,
+            "SchemaSetupRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies = [iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")]
+        )
+        # rds_password_secret.grant_read(schema_setup_role)
+
+        schema_setup_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:DescribeSecret"
+                ],
+                resources=[rds_password_secret.secret_arn]
+            )
+        )
+
+        # Lambda to execute PostgreSQL schema setup
+        schema_setup_lambda = _lambda.Function(
+            self,
+            f"SchemaSetupLambda-{name_alias}",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="index.handler",
+            code=_lambda.Code.from_asset("apply_sql_schema"),
+            timeout=Duration.minutes(5),
+            role=schema_setup_role,
+            environment={
+                "SECRET_NAME": rds_password_secret.secret_name,
+                "DB_HOST": postgres_rds.db_instance_endpoint_address,
+            },
+            layers=[
+                _lambda.LayerVersion(
+                    self,
+                    "PsycopgLayer",
+                    code=_lambda.Code.from_asset("dependencies/pg8000.zip"),
+                    compatible_runtimes=[_lambda.Runtime.PYTHON_3_9],
+                )
+            ]
+        )
+
+        # Custom resource to trigger schema setup for RDS database
+        schema_setup_provider = Provider(
+            self,
+            "SchemaSetupProvider",
+            on_event_handler=schema_setup_lambda
+        )
+
+        # Custom resource to trigger the Lambda
+        schema_custom_resource = CustomResource(
+            self, "RunSchemaOnDeploy",
+            service_token=schema_setup_provider.service_token,
+            # Include properties that should trigger a re-execution
+            # Adding a timestamp ensures it runs on every deployment
+            properties={
+                "timestamp": datetime.now().isoformat(),
+                "dbIdentifier": postgres_rds.instance_identifier,
+            }
+        )
+
         # # Add dependency to ensure RDS is created before schema setup
-        # schema_setup.node.add_dependency(postgres_rds)
-        #
-        # # Outputs
-        # CfnOutput(
-        #     self,
-        #     "RdsEndpoint",
-        #     value=postgres_rds.db_instance_endpoint_address,
-        #     description="The endpoint of the RDS PostgreSQL instance"
-        # )
-        #
-        # CfnOutput(
-        #     self,
-        #     "RdsSecretName",
-        #     value=rds_password_secret.secret_name,
-        #     description="Name of the secret containing the RDS credentials"
-        # )
+        schema_setup_lambda.node.add_dependency(postgres_rds)
+        schema_custom_resource.node.add_dependency(postgres_rds)
+
