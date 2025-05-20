@@ -1,0 +1,146 @@
+import aws_cdk as cdk
+from aws_cdk import (
+    Stack,
+    aws_apigateway as apigateway,
+    aws_lambda as _lambda,
+    aws_iam as iam,
+    aws_secretsmanager as secretsmanager,
+    aws_logs as logs,
+    CfnOutput,
+    Duration,
+    RemovalPolicy
+)
+from constructs import Construct
+import json
+import os
+import random
+import string
+
+
+class ApiGatewayStack(Stack):
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        # Define locals
+        name_alias = self.node.try_get_context("name_alias") or "default"
+
+        # HTTP Methods and Endpoints
+        http_methods = ["GET", "PUT"]
+        endpoints_list = {
+            "orders": "/orders",
+            "customers": "/customers"
+        }
+        integration_type = apigateway.LambdaIntegrationOptions(
+            proxy=True
+        )
+
+        # Generate a random password with only alphanumeric characters
+        api_password = ''.join(
+            random.choice(string.ascii_letters + string.digits + "_%@")
+            for _ in range(16)
+        )
+
+        # Create Secrets Manager secret
+        api_password_secret = secretsmanager.Secret(
+            self, "ApiPasswordSecret",
+            secret_name=f"api-token-authorisation-{name_alias}",
+            description=f"Rest Api access token {name_alias}",
+            secret_string_value=cdk.SecretValue.unsafe_plain_text(
+                json.dumps({"password": api_password})
+            ),
+            removal_policy=RemovalPolicy.DESTROY
+        )
+
+        # Create API Gateway Rest API
+        rest_api = apigateway.RestApi(
+            self, "RestApi",
+            rest_api_name=f"Rest-Api-{name_alias}",
+            endpoint_types=[apigateway.EndpointType.REGIONAL],
+            cloud_watch_role=True,
+            deploy_options=apigateway.StageOptions(
+                stage_name="prod",
+                metrics_enabled=True,
+                logging_level=apigateway.MethodLoggingLevel.INFO,
+                data_trace_enabled=True
+            )
+        )
+
+        # Lambda execution role with permissions
+        _lambdarole = iam.Role(
+            self, "LambdaExecutionRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+            ]
+        )
+
+        #TODO : update this fun /infra_stacks/cdk_stack_infrastructure/lambda_rest_api
+        # Lambda functions
+        _lambda_rest_api = _lambda.Function(
+            self, "LambdaRestApi",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="index.handler",
+            code=_lambda.Code.from_inline("""
+def handler(event, context):
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
+        'body': '{"message": "API Gateway with Lambda integration"}'
+    }
+            """),
+            role=_lambdarole
+        )
+
+        _lambda_token_authorizer = _lambda.Function(
+            self, "LambdaTokenAuthorizer",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="lambda_handler.lambda_handler",
+            code=_lambda.Code.from_asset("lambda_grant_token_access"),
+            role=_lambdarole,
+            environment={
+                "SECRET_NAME": api_password_secret.secret_name
+            }
+        )
+
+        # Grant lambda permission to read from Secrets Manager
+        api_password_secret.grant_read(_lambda_token_authorizer)
+
+        # Custom authorizer for API Gateway
+        authorizer = apigateway.TokenAuthorizer(
+            self, "CustomAuthorizer",
+            handler=_lambda_token_authorizer,
+            identity_source="method.request.header.Authorization",
+            results_cache_ttl=Duration.seconds(0)
+        )
+
+        # Create resources and methods dynamically
+        for endpoint_key, endpoint_path in endpoints_list.items():
+            resource = rest_api.root.add_resource(endpoint_key)
+
+            for method in http_methods:
+                # Define the request parameters based on the endpoint
+                request_params = {
+                    "method.request.header.Authorization": True
+                }
+
+                if endpoint_key == "customers":
+                    request_params["method.request.querystring.customer_id"] = False
+                elif endpoint_key == "orders":
+                    request_params["method.request.querystring.order_id"] = False
+
+                # Add method with the custom authorizer
+                resource.add_method(
+                    method,
+                    apigateway.LambdaIntegration(_lambda_rest_api),
+                    request_parameters=request_params,
+                    authorization_type=apigateway.AuthorizationType.CUSTOM,
+                    authorizer=authorizer
+                )
+
+        # Outputs
+        CfnOutput(self, "RestApiEndpoint", value=rest_api.url)
+        CfnOutput(self, "ApiPasswordSecretName", value=api_password_secret.secret_name)
+
+
