@@ -10,7 +10,7 @@ import datetime
 SECRET_NAME = os.getenv("SECRET_NAME")
 RDS_SECRET_NAME = os.getenv("RDS_SECRET_NAME")
 REGION = str(os.getenv("REGION", "eu-west-1"))
-DB_NAME = os.getenv("DB_NAME")
+DB_NAME = str(os.getenv("DB_NAME", "database_rds"))
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = int(os.getenv("DB_PORT", 5432))
 DB_SCHEMA= "myschema1"

@@ -18,7 +18,7 @@ import string
 
 
 class ApiGatewayStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, rds_secret_name, rds_endpoint_address, rds_secret_arn, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Define locals
@@ -51,6 +51,21 @@ class ApiGatewayStack(Stack):
             removal_policy=RemovalPolicy.DESTROY
         )
 
+        # Define Lambda Layers
+        pg8000_layer = _lambda.LayerVersion(
+            self, "Pg8000Layer",
+            code=_lambda.Code.from_asset("dependencies/pg8000.zip"),
+            compatible_runtimes=[_lambda.Runtime.PYTHON_3_8, _lambda.Runtime.PYTHON_3_9],
+            layer_version_name="python_pg8000_layer"
+        )
+
+        logging_layer = _lambda.LayerVersion(
+            self, "LoggingLayer",
+            code=_lambda.Code.from_asset("dependencies/logging_layer.zip"),
+            compatible_runtimes=[_lambda.Runtime.PYTHON_3_8, _lambda.Runtime.PYTHON_3_9],
+            layer_version_name="python_logging_layer"
+        )
+
         # Create API Gateway Rest API
         rest_api = apigateway.RestApi(
             self, "RestApi",
@@ -66,31 +81,92 @@ class ApiGatewayStack(Stack):
         )
 
         # Lambda execution role with permissions
-        _lambdarole = iam.Role(
-            self, "LambdaExecutionRole",
-            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+        _lambda_role = iam.Role(
+            self, "LambdaRestApiRole",
+            role_name=f"lambda_rest_api-{name_alias}",
+            assumed_by=iam.CompositePrincipal(
+                iam.ServicePrincipal("lambda.amazonaws.com"),
+                iam.ServicePrincipal("apigateway.amazonaws.com")
+            )
+        )
+        
+        lambda_policy = iam.Policy(
+            self, "LambdaRestApiPolicy",
+            policy_name=f"lambda_rest_api_policy-{name_alias}",
+            statements=[
+                # CloudWatch Logs permission
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    resources=[
+                        f"arn:aws:logs:{self.region}:{self.account}:*"
+                    ]
+                ),
+
+                # Secrets Manager permissions
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "secretsmanager:GetSecretValue",
+                        "secretsmanager:DescribeSecret"
+                    ],
+                    resources=[
+                        api_password_secret.secret_arn,
+                        rds_secret_arn
+                    ]
+                ),
+
+                # RDS Connect permission
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "rds-db:connect"
+                    ],
+                    resources=["*"]
+                ),
+
+                # RDS Describe and Data API Permissions
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "rds:DescribeDBInstances",
+                        "rds-data:ExecuteStatement"
+                    ],
+                    resources=["*"]
+                ),
+
+                # Lambda Invoke Permissions
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "lambda:InvokeFunction"
+                    ],
+                    resources=["*"]
+                )
             ]
         )
 
-        #TODO : update this fun /infra_stacks/cdk_stack_infrastructure/lambda_rest_api
+        # Attach the policy to the role
+        lambda_policy.attach_to_role(_lambda_role)
+
+        # TODO : update this fun /infra_stacks/cdk_stack_infrastructure/lambda_rest_api
         # Lambda functions
         _lambda_rest_api = _lambda.Function(
             self, "LambdaRestApi",
             runtime=_lambda.Runtime.PYTHON_3_9,
-            handler="index.handler",
-            code=_lambda.Code.from_inline("""
-def handler(event, context):
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': '{"message": "API Gateway with Lambda integration"}'
-    }
-            """),
-            role=_lambdarole
+            handler="lambda_handler.lambda_handler",
+            code=_lambda.Code.from_asset("lambda_rest_api"),
+            role=_lambda_role,
+            environment={
+                "SECRET_NAME": api_password_secret.secret_name,
+                "RDS_SECRET_NAME": rds_secret_name,
+                "DB_HOST": rds_endpoint_address,
+            },
+            layers=[pg8000_layer, logging_layer],
         )
 
         _lambda_token_authorizer = _lambda.Function(
@@ -98,7 +174,7 @@ def handler(event, context):
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="lambda_handler.lambda_handler",
             code=_lambda.Code.from_asset("lambda_grant_token_access"),
-            role=_lambdarole,
+            role=_lambda_role,
             environment={
                 "SECRET_NAME": api_password_secret.secret_name
             }
@@ -142,5 +218,3 @@ def handler(event, context):
         # Outputs
         CfnOutput(self, "RestApiEndpoint", value=rest_api.url)
         CfnOutput(self, "ApiPasswordSecretName", value=api_password_secret.secret_name)
-
-
