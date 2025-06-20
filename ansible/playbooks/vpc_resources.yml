@@ -1,0 +1,208 @@
+---
+- name: Create RDS PostgreSQL infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    name_alias: "{{ ansible_name_alias | default('default') }}"
+    is_development: "{{ ansible_is_development | default(true) }}"
+    aws_profile: "user_infra"
+    aws_region: "{{ ansible_aws_region | default('us-east-1') }}"
+
+    # RDS Configuration
+    db_engine: "postgres"
+    db_engine_version: "16.6"
+    db_instance_class: "db.t3.micro"
+    db_allocated_storage: 50
+    db_storage_type: "gp2"
+    db_username: "postgres"
+    password_length: 16
+
+  tasks:
+    # Create Secrets Manager secret for RDS password
+    - name: Create RDS password secret in Secrets Manager
+      amazon.aws.secretsmanager_secret:
+        name: "rds-password-{{ name_alias }}"
+        description: "RDS password for user {{ name_alias }}"
+        secret_type: "password"
+        generate_secret_string:
+          password_length: "{{ password_length }}"
+          exclude_characters: '"@/\'
+          exclude_punctuation: false
+          include_space: false
+          require_each_included_type: true
+          secret_string_template: '{"username": "{{ db_username }}"}'
+          generate_string_key: "password"
+        tags:
+          Environment: "production"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      register: rds_secret
+
+    # Create DB subnet group (assuming you have VPC subnets)
+    - name: Create DB subnet group
+      amazon.aws.rds_subnet_group:
+        name: "db-subnet-group-{{ name_alias }}"
+        description: "DB subnet group for {{ name_alias }}"
+        subnets:
+          - "{{ vpc_subnet_1_id }}"  # You'll need to provide these
+          - "{{ vpc_subnet_2_id }}"  # from your VPC setup
+        tags:
+          Name: "db-subnet-group-{{ name_alias }}"
+          Environment: "{{ 'development' if is_development else 'production' }}"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      register: db_subnet_group
+
+    # Create RDS PostgreSQL instance
+    - name: Create RDS PostgreSQL instance
+      amazon.aws.rds_instance:
+        db_instance_identifier: "rds-database-{{ name_alias }}"
+        db_instance_class: "{{ db_instance_class }}"
+        engine: "{{ db_engine }}"
+        engine_version: "{{ db_engine_version }}"
+        master_username: "{{ db_username }}"
+        manage_master_user_password: true
+        master_user_secret_kms_key_id: "alias/aws/secretsmanager"
+        allocated_storage: "{{ db_allocated_storage }}"
+        storage_type: "{{ db_storage_type }}"
+        storage_encrypted: true
+        vpc_security_group_ids:
+          - "{{ rds_security_group_id }}"  # You'll need to provide this
+        db_subnet_group_name: "{{ db_subnet_group.subnet_group.name }}"
+        publicly_accessible: true
+        multi_az: true
+        backup_retention_period: 7
+        preferred_maintenance_window: "Wed:04:06-Wed:04:36"
+        auto_minor_version_upgrade: false
+        enable_cloudwatch_logs_exports:
+          - "postgresql"
+        enable_performance_insights: true
+        deletion_protection: "{{ not is_development }}"
+        skip_final_snapshot: "{{ is_development }}"
+        final_db_snapshot_identifier: "{{ 'final-snapshot-' + name_alias if not is_development else omit }}"
+        copy_tags_to_snapshot: true
+        tags:
+          Name: "rds-database-{{ name_alias }}"
+          Environment: "{{ 'development' if is_development else 'production' }}"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+        wait: true
+        wait_timeout: 1800
+      register: rds_instance
+
+    # Create IAM role for Lambda function
+    - name: Create IAM role for schema setup Lambda
+      amazon.aws.iam_role:
+        name: "SchemaSetupRole-{{ name_alias }}"
+        assume_role_policy_document: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          }
+        managed_policies:
+          - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      register: lambda_role
+
+    # Attach policy for Secrets Manager access
+    - name: Create and attach Secrets Manager policy to Lambda role
+      amazon.aws.iam_managed_policy:
+        name: "SecretsManagerAccess-{{ name_alias }}"
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "secretsmanager:GetSecretValue",
+                  "secretsmanager:DescribeSecret"
+                ],
+                "Resource": "{{ rds_secret.secret.arn }}"
+              }
+            ]
+          }
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      register: secrets_policy
+
+    - name: Attach Secrets Manager policy to Lambda role
+      amazon.aws.iam_role:
+        name: "SchemaSetupRole-{{ name_alias }}"
+        managed_policies:
+          - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+          - "{{ secrets_policy.policy.arn }}"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+
+    # Create Lambda layer (you'll need to create pg8000.zip separately)
+    - name: Create Lambda layer for PostgreSQL driver
+      amazon.aws.lambda_layer_version:
+        layer_name: "psycopg-layer-{{ name_alias }}"
+        content:
+          s3_bucket: "{{ lambda_artifacts_bucket }}"  # You'll need to upload pg8000.zip here
+          s3_key: "dependencies/pg8000.zip"
+        compatible_runtimes:
+          - "python3.9"
+        description: "PostgreSQL driver layer"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      register: lambda_layer
+      when: lambda_artifacts_bucket is defined
+
+    # Create Lambda function for schema setup
+    - name: Create schema setup Lambda function
+      amazon.aws.lambda_function:
+        function_name: "SchemaSetupLambda-{{ name_alias }}"
+        runtime: "python3.9"
+        handler: "index.handler"
+        role: "{{ lambda_role.arn }}"
+        code:
+          s3_bucket: "{{ lambda_artifacts_bucket }}"  # You'll need to upload your code here
+          s3_key: "apply_sql_schema.zip"
+        timeout: 300
+        environment:
+          SECRET_NAME: "{{ rds_secret.secret.name }}"
+          DB_HOST: "{{ rds_instance.db_instance.endpoint.address }}"
+        layers:
+          - "{{ lambda_layer.layer_version_arn if lambda_layer is defined else omit }}"
+        tags:
+          Name: "SchemaSetupLambda-{{ name_alias }}"
+          Environment: "{{ 'development' if is_development else 'production' }}"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      register: schema_lambda
+      when: lambda_artifacts_bucket is defined
+
+    # Invoke Lambda function to setup schema (manual trigger)
+    - name: Invoke schema setup Lambda
+      amazon.aws.lambda_invoke:
+        function_name: "{{ schema_lambda.configuration.function_name }}"
+        payload:
+          timestamp: "{{ ansible_date_time.iso8601 }}"
+          dbIdentifier: "{{ rds_instance.db_instance.db_instance_identifier }}"
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+      when: schema_lambda is defined and run_schema_setup | default(false)
+
+  # Output important information
+  post_tasks:
+    - name: Display RDS instance information
+      debug:
+        msg:
+          - "RDS Endpoint: {{ rds_instance.db_instance.endpoint.address }}"
+          - "RDS Port: {{ rds_instance.db_instance.endpoint.port }}"
+          - "Secret Name: {{ rds_secret.secret.name }}"
+          - "Secret ARN: {{ rds_secret.secret.arn }}"
+          - "RDS Instance ARN: {{ rds_instance.db_instance.db_instance_arn }}"

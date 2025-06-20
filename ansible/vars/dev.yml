@@ -1,0 +1,15 @@
+name_alias: "dev-myproject"
+is_development: true
+aws_region: "eu-west-1"
+aws_profile: "user_infra"
+
+ansible_name_alias: "ansibletest"
+aws_region: "eu-west-1"
+# VPC Configuration (you'll need to provide these)
+vpc_subnet_1_id: "subnet-xxxxxxxxx"
+vpc_subnet_2_id: "subnet-yyyyyyyyy"
+rds_security_group_id: "rds_database"
+
+# Lambda Configuration
+lambda_artifacts_bucket: "my-lambda-artifacts-bucket"
+run_schema_setup: true  # Set to true to run schema setup

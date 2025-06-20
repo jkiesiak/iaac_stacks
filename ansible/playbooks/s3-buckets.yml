@@ -1,0 +1,34 @@
+---
+- name: Create S3 buckets for event and backup data
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Define your variables here
+    name_alias: "{{ ansible_name_alias | default('default') }}"
+    is_development: "{{ ansible_is_development | default(false) }}"
+    aws_profile: "user_infra"
+
+  tasks:
+    - name: Create S3 bucket for event data
+      amazon.aws.s3_bucket:
+        name: "bucket-event-data-{{ name_alias }}"
+        state: present
+        force: "{{ is_development }}"
+        region: "{{ aws_region | default('eu-west-1') }}"
+        profile: "{{ aws_profile }}"
+      tags:
+        - s3
+        - event-data
+
+    - name: Create S3 bucket for backup data
+      amazon.aws.s3_bucket:
+        name: "bucket-backup-data-{{ name_alias }}"
+        state: present
+        force: "{{ is_development }}"
+        region: "{{ aws_region | default('eu-west-1') }}"
+        profile: "{{ aws_profile }}"
+      tags:
+        - s3
+        - backup-data

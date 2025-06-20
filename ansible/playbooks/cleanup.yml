@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    name_alias: "default"
+    aws_profile: "user_infra"
+  tasks:
+    - name: Delete everything
+      block:
+        - amazon.aws.s3_bucket:
+            name: "bucket-event-data-{{ name_alias }}"
+            state: absent
+            force: true
+            profile: "{{ aws_profile }}"
+        - amazon.aws.s3_bucket:
+            name: "bucket-backup-data-{{ name_alias }}"
+            state: absent
+            force: true
+            profile: "{{ aws_profile }}"
+        - amazon.aws.rds_instance:
+            db_instance_identifier: "rds-database-{{ name_alias }}"
+            state: absent
+            skip_final_snapshot: true
+            profile: "{{ aws_profile }}"
+      ignore_errors: true
