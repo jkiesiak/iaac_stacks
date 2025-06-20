@@ -1,0 +1,928 @@
+{
+ "Resources": {
+  "RdsPasswordSecretpolkaF6D984A8": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "RDS password for user polka",
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\",
+     "ExcludePunctuation": false,
+     "GenerateStringKey": "password",
+     "IncludeSpace": false,
+     "PasswordLength": 16,
+     "RequireEachIncludedType": true,
+     "SecretStringTemplate": "{\"username\": \"postgres\"}"
+    },
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "production"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/RdsPasswordSecretpolka/Resource"
+   }
+  },
+  "RdsPasswordSecretpolkaAttachment5586D4F2": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "RdsPasswordSecretpolkaF6D984A8"
+    },
+    "TargetId": {
+     "Ref": "PostgresRdsInstance8824E7E1"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/RdsPasswordSecretpolka/Attachment/Resource"
+   }
+  },
+  "PostgresRdsInstanceSubnetGroupE6D9D4A8": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for PostgresRdsInstance database",
+    "SubnetIds": [
+     {
+      "Fn::ImportValue": "VpcStack:ExportsOutputRefMyVpcpolkapublicSubnet1Subnet96AD7A8CBE828186"
+     },
+     {
+      "Fn::ImportValue": "VpcStack:ExportsOutputRefMyVpcpolkapublicSubnet2Subnet6A30C6D3F48AD165"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/PostgresRdsInstance/SubnetGroup/Default"
+   }
+  },
+  "PostgresRdsInstance8824E7E1": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "50",
+    "AutoMinorVersionUpgrade": false,
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBInstanceIdentifier": "rds-database-polka",
+    "DBParameterGroupName": "default.postgres16",
+    "DBSubnetGroupName": {
+     "Ref": "PostgresRdsInstanceSubnetGroupE6D9D4A8"
+    },
+    "DeletionProtection": false,
+    "EnableCloudwatchLogsExports": [
+     "postgresql"
+    ],
+    "EnableIAMDatabaseAuthentication": true,
+    "EnablePerformanceInsights": true,
+    "Engine": "postgres",
+    "EngineVersion": "16.6",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "RdsPasswordSecretpolkaF6D984A8"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": "postgres",
+    "MultiAZ": true,
+    "PerformanceInsightsRetentionPeriod": 7,
+    "PreferredMaintenanceWindow": "Wed:04:06-Wed:04:36",
+    "PubliclyAccessible": true,
+    "StorageEncrypted": true,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::ImportValue": "VpcStack:ExportsOutputFnGetAttRdsSecurityGrouppolka2928ED77GroupIdC552AAFB"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/PostgresRdsInstance/Resource"
+   }
+  },
+  "SchemaSetupRole4A8C91EA": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/SchemaSetupRole/Resource"
+   }
+  },
+  "SchemaSetupRoleDefaultPolicyB952B3DD": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "RdsPasswordSecretpolkaF6D984A8"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SchemaSetupRoleDefaultPolicyB952B3DD",
+    "Roles": [
+     {
+      "Ref": "SchemaSetupRole4A8C91EA"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/SchemaSetupRole/DefaultPolicy/Resource"
+   }
+  },
+  "PsycopgLayerB9C5DB50": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "CompatibleRuntimes": [
+     "python3.9"
+    ],
+    "Content": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "435172d93610e5125475f5662a6e6c4da3548f90fbbd30cc9cdbef9c00ef1216.zip"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/PsycopgLayer/Resource",
+    "aws:asset:path": "asset.435172d93610e5125475f5662a6e6c4da3548f90fbbd30cc9cdbef9c00ef1216.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "SchemaSetupLambdapolka5770EB08": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "fb1a461c7a1cf1c9e6d4481aae2f66b36cb264b432725f51d7d78154250ad65f.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "SECRET_NAME": {
+       "Fn::Join": [
+        "-",
+        [
+         {
+          "Fn::Select": [
+           0,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "RdsPasswordSecretpolkaF6D984A8"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           1,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "RdsPasswordSecretpolkaF6D984A8"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       ]
+      },
+      "DB_HOST": {
+       "Fn::GetAtt": [
+        "PostgresRdsInstance8824E7E1",
+        "Endpoint.Address"
+       ]
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "PsycopgLayerB9C5DB50"
+     }
+    ],
+    "Role": {
+     "Fn::GetAtt": [
+      "SchemaSetupRole4A8C91EA",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.9",
+    "Timeout": 300
+   },
+   "DependsOn": [
+    "PostgresRdsInstance8824E7E1",
+    "PostgresRdsInstanceSubnetGroupE6D9D4A8",
+    "SchemaSetupRoleDefaultPolicyB952B3DD",
+    "SchemaSetupRole4A8C91EA"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/SchemaSetupLambda-polka/Resource",
+    "aws:asset:path": "asset.fb1a461c7a1cf1c9e6d4481aae2f66b36cb264b432725f51d7d78154250ad65f",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "SchemaSetupProviderframeworkonEventServiceRole769879D7": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/SchemaSetupProvider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "SchemaSetupProviderframeworkonEventServiceRoleDefaultPolicyD438935A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "SchemaSetupLambdapolka5770EB08",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "SchemaSetupLambdapolka5770EB08",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "SchemaSetupLambdapolka5770EB08",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SchemaSetupProviderframeworkonEventServiceRoleDefaultPolicyD438935A",
+    "Roles": [
+     {
+      "Ref": "SchemaSetupProviderframeworkonEventServiceRole769879D7"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/SchemaSetupProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "SchemaSetupProviderframeworkonEvent690CF7FA": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (RDSStack/SchemaSetupProvider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "SchemaSetupLambdapolka5770EB08",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "Role": {
+     "Fn::GetAtt": [
+      "SchemaSetupProviderframeworkonEventServiceRole769879D7",
+      "Arn"
+     ]
+    },
+    "Runtime": {
+     "Fn::FindInMap": [
+      "LatestNodeRuntimeMap",
+      {
+       "Ref": "AWS::Region"
+      },
+      "value"
+     ]
+    },
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "SchemaSetupProviderframeworkonEventServiceRoleDefaultPolicyD438935A",
+    "SchemaSetupProviderframeworkonEventServiceRole769879D7"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/SchemaSetupProvider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "RunSchemaOnDeploy": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "SchemaSetupProviderframeworkonEvent690CF7FA",
+      "Arn"
+     ]
+    },
+    "timestamp": "2025-06-20T21:57:22.764163",
+    "dbIdentifier": {
+     "Ref": "PostgresRdsInstance8824E7E1"
+    }
+   },
+   "DependsOn": [
+    "PostgresRdsInstance8824E7E1",
+    "PostgresRdsInstanceSubnetGroupE6D9D4A8"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/RunSchemaOnDeploy/Default"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/2WOzU7DQAyEn6X3rWnpATg2rUBIIEUJ4ho5GzddmuxGay9VFeXd0SYp4uc0M/7Glm9h/XAHqwWeeamr07IxJfS5oD4pPHPRM2lPwi1arMlDn49Z7Q52dpO8oa9JtiKojy3ZH4W/ZFC+Yuj3KFgi07NlQatJ5aG0JE/ehS4u75N/g2t1UAZb6DPXUASjpq4x+hLj5AbVYFtWCP0LXsi/k2fjbOS/8mOwWmZw9YPiTYHMJAzbKIo3kAR9IkmQaVAZsQtekxppLlgbWysdWFxb+BkypN59mop8vP2KXRdLu7H0fSB+P/tBpRc5OnuzgfUK7hcfbMzSByumJcgm/QLsyxkWrAEAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "RDSStack/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Mappings": {
+  "LatestNodeRuntimeMap": {
+   "af-south-1": {
+    "value": "nodejs22.x"
+   },
+   "ap-east-1": {
+    "value": "nodejs22.x"
+   },
+   "ap-east-2": {
+    "value": "nodejs22.x"
+   },
+   "ap-northeast-1": {
+    "value": "nodejs22.x"
+   },
+   "ap-northeast-2": {
+    "value": "nodejs22.x"
+   },
+   "ap-northeast-3": {
+    "value": "nodejs22.x"
+   },
+   "ap-south-1": {
+    "value": "nodejs22.x"
+   },
+   "ap-south-2": {
+    "value": "nodejs22.x"
+   },
+   "ap-southeast-1": {
+    "value": "nodejs22.x"
+   },
+   "ap-southeast-2": {
+    "value": "nodejs22.x"
+   },
+   "ap-southeast-3": {
+    "value": "nodejs22.x"
+   },
+   "ap-southeast-4": {
+    "value": "nodejs22.x"
+   },
+   "ap-southeast-5": {
+    "value": "nodejs22.x"
+   },
+   "ap-southeast-7": {
+    "value": "nodejs22.x"
+   },
+   "ca-central-1": {
+    "value": "nodejs22.x"
+   },
+   "ca-west-1": {
+    "value": "nodejs22.x"
+   },
+   "cn-north-1": {
+    "value": "nodejs22.x"
+   },
+   "cn-northwest-1": {
+    "value": "nodejs22.x"
+   },
+   "eu-central-1": {
+    "value": "nodejs22.x"
+   },
+   "eu-central-2": {
+    "value": "nodejs22.x"
+   },
+   "eu-isoe-west-1": {
+    "value": "nodejs18.x"
+   },
+   "eu-north-1": {
+    "value": "nodejs22.x"
+   },
+   "eu-south-1": {
+    "value": "nodejs22.x"
+   },
+   "eu-south-2": {
+    "value": "nodejs22.x"
+   },
+   "eu-west-1": {
+    "value": "nodejs22.x"
+   },
+   "eu-west-2": {
+    "value": "nodejs22.x"
+   },
+   "eu-west-3": {
+    "value": "nodejs22.x"
+   },
+   "il-central-1": {
+    "value": "nodejs22.x"
+   },
+   "me-central-1": {
+    "value": "nodejs22.x"
+   },
+   "me-south-1": {
+    "value": "nodejs22.x"
+   },
+   "mx-central-1": {
+    "value": "nodejs22.x"
+   },
+   "sa-east-1": {
+    "value": "nodejs22.x"
+   },
+   "us-east-1": {
+    "value": "nodejs22.x"
+   },
+   "us-east-2": {
+    "value": "nodejs22.x"
+   },
+   "us-gov-east-1": {
+    "value": "nodejs22.x"
+   },
+   "us-gov-west-1": {
+    "value": "nodejs22.x"
+   },
+   "us-iso-east-1": {
+    "value": "nodejs18.x"
+   },
+   "us-iso-west-1": {
+    "value": "nodejs18.x"
+   },
+   "us-isob-east-1": {
+    "value": "nodejs18.x"
+   },
+   "us-isob-west-1": {
+    "value": "nodejs18.x"
+   },
+   "us-west-1": {
+    "value": "nodejs22.x"
+   },
+   "us-west-2": {
+    "value": "nodejs22.x"
+   }
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Outputs": {
+  "ExportsOutputRefPostgresRdsInstance8824E7E1CB368357": {
+   "Value": {
+    "Ref": "PostgresRdsInstance8824E7E1"
+   },
+   "Export": {
+    "Name": "RDSStack:ExportsOutputRefPostgresRdsInstance8824E7E1CB368357"
+   }
+  },
+  "ExportsOutputRefRdsPasswordSecretpolkaF6D984A83B813B7C": {
+   "Value": {
+    "Ref": "RdsPasswordSecretpolkaF6D984A8"
+   },
+   "Export": {
+    "Name": "RDSStack:ExportsOutputRefRdsPasswordSecretpolkaF6D984A83B813B7C"
+   }
+  },
+  "ExportsOutputFnGetAttPostgresRdsInstance8824E7E1EndpointAddressC5B72BA5": {
+   "Value": {
+    "Fn::GetAtt": [
+     "PostgresRdsInstance8824E7E1",
+     "Endpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "RDSStack:ExportsOutputFnGetAttPostgresRdsInstance8824E7E1EndpointAddressC5B72BA5"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
