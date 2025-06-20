@@ -193,12 +193,18 @@ done
 
 # Summary
 echo "📊 Deletion Summary:"
-if [[ ${#failed_deletions[@]} -eq 0 ]]; then
-    echo "✅ All stacks deleted successfully!"
-else
-    echo "❌ Some stacks failed to delete:"
+echo "✅ Successfully deleted: ${#successful_deletions[@]} stack(s)"
+if [[ ${#successful_deletions[@]} -gt 0 ]]; then
+    for stack in "${successful_deletions[@]}"; do
+        echo "  ✓ $stack"
+    done
+fi
+
+if [[ ${#failed_deletions[@]} -gt 0 ]]; then
+    echo ""
+    echo "❌ Failed to delete: ${#failed_deletions[@]} stack(s)"
     for stack in "${failed_deletions[@]}"; do
-        echo "  - $stack"
+        echo "  ✗ $stack"
     done
     echo ""
     echo "💡 Troubleshooting tips:"
@@ -211,8 +217,9 @@ else
     for stack in "${failed_deletions[@]}"; do
         echo "  aws cloudformation describe-stack-events --stack-name $stack --profile $PROFILE --region $REGION"
     done
+    echo ""
     exit 1
+else
+    echo ""
+    echo "🎉 All stacks have been successfully deleted!"
 fi
-
-echo ""
-echo "🎉 All stacks have been successfully deleted!"
