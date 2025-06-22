@@ -20,42 +20,43 @@ from datetime import datetime
 
 
 class RdsPostgresStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, vpc,
-                 name_alias: str,
-                 rds_security_group,
-                 # db_subnet_group: rds.CfnDBSubnetGroup,
-                 **kwargs):
-        super().__init__(scope, construct_id, **kwargs)
+    def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc, rds_security_group: ec2.ISecurityGroup, env: str = "dev", **kwargs):
+        super().__init__(scope, id, **kwargs)
 
         is_development = True
-        # Generate random password for RDS
-        password_length = 16
-        password_chars = string.ascii_letters + string.digits + "!#$%&*-_=+[]{}<>:?"
-        random_password = ''.join(random.choice(password_chars) for _ in range(password_length))
+
+        # Create naming convention helper
+        def get_resource_name(resource_type: str) -> str:
+            """Generate consistent resource names with env prefix"""
+            return f"{resource_type}-{env}"
+
+        # # Generate random password for RDS
+        # password_length = 16
+        # password_chars = string.ascii_letters + string.digits + "!#$%&*-_=+[]{}<>:?"
+        # random_password = ''.join(random.choice(password_chars) for _ in range(password_length))
 
         # Create a secret in Secrets Manager to store the password
         rds_password_secret = secretsmanager.Secret(
             self,
             f"RdsPasswordSecret{name_alias}",
-            # secret_name=f"rds-password-{name_alias}",
+            secret_name=get_resource_name("rds-password"),
             description=f"RDS password for user {name_alias}",
             generate_secret_string=secretsmanager.SecretStringGenerator(
                 secret_string_template=json.dumps({"username": "postgres"}),
                 generate_string_key="password",
                 exclude_characters="\"@/\\",
-                password_length=password_length,
+                password_length=16,
                 exclude_punctuation=False,
                 include_space=False,
                 require_each_included_type=True
             )
         )
 
-        Tags.of(rds_password_secret).add("Environment", "production")
-
         # Create RDS PostgreSQL instance
         postgres_rds = rds.DatabaseInstance(
             self,
             "PostgresRdsInstance",
+            instance_identifier=get_resource_name("rds-database"),
             engine=rds.DatabaseInstanceEngine.postgres(
                 version=rds.PostgresEngineVersion.VER_16_6
             ),
@@ -64,7 +65,6 @@ class RdsPostgresStack(Stack):
                 ec2.InstanceSize.MICRO
             ),
             credentials=rds.Credentials.from_secret(rds_password_secret, username="postgres"),
-            instance_identifier=f"rds-database-{name_alias}",
             allocated_storage=50,
             storage_type=rds.StorageType.GP2,
             storage_encrypted=True,
@@ -101,10 +101,10 @@ class RdsPostgresStack(Stack):
         schema_setup_role = iam.Role(
             self,
             "SchemaSetupRole",
+            role_name=get_resource_name("schema-setup"),
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies = [iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")]
         )
-        # rds_password_secret.grant_read(schema_setup_role)
 
         schema_setup_role.add_to_policy(
             iam.PolicyStatement(
@@ -120,7 +120,8 @@ class RdsPostgresStack(Stack):
         # Lambda to execute PostgreSQL schema setup
         schema_setup_lambda = _lambda.Function(
             self,
-            f"SchemaSetupLambda-{name_alias}",
+            f"SchemaSetupLambda",
+            function_name=get_resource_name("lambda-setup-schema"),
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="index.handler",
             code=_lambda.Code.from_asset("apply_sql_schema"),

@@ -7,26 +7,31 @@ from constructs import Construct
 
 class VpcStack(Stack):
 
-    def __init__(self, scope: Construct, id: str, *, region_aws: str, name_alias: str, **kwargs):
+    def __init__(self, scope: Construct, id: str, region_aws: str ="eu-west-1", env: str = "dev", **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        # availability zones
         azs = [f"{region_aws}a", f"{region_aws}b"]
 
+        # Create naming convention helper
+        def get_resource_name(resource_type: str) -> str:
+            """Generate consistent resource names with env prefix"""
+            return f"{resource_type}-{env}"
+
         # Create the VPC
-        vpc = ec2.Vpc(self, f"MyVpc-{name_alias}",
-            # vpc_name=f"my_vpc-module-{name_alias}",
+        vpc = ec2.Vpc(self, f"MyVpc-{env}",
+            vpc_name=get_resource_name("vpc"),
             cidr="10.0.0.0/16",
+            availability_zones=azs,  # default managed by cdk
             max_azs=2,
             nat_gateways=1,
             subnet_configuration=[
                 ec2.SubnetConfiguration(
-                    name="public",
+                    name=get_resource_name("public-subnet"),
                     subnet_type=ec2.SubnetType.PUBLIC,
                     cidr_mask=24
                 ),
                 ec2.SubnetConfiguration(
-                    name="private",
+                    name=get_resource_name("private-subnet"),
                     subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                     cidr_mask=24
                 ),
@@ -36,9 +41,9 @@ class VpcStack(Stack):
         )
 
         # Security Group for RDS
-        rds_sg = ec2.SecurityGroup(self, f"RdsSecurityGroup{name_alias}",
+        rds_sg = ec2.SecurityGroup(self, f"RdsSecurityGroup{env}",
             vpc=vpc,
-            # security_group_name=f"vpc-security-group-{name_alias}",
+            security_group_name=get_resource_name("rds-sg"),
             allow_all_outbound=True
         )
 
@@ -55,10 +60,9 @@ class VpcStack(Stack):
         db_subnet_group = rds.CfnDBSubnetGroup(self, "DbSubnetGroup",
             db_subnet_group_description="Subnet group for RDS instance",
             subnet_ids=[subnet.subnet_id for subnet in vpc.public_subnets],
-            db_subnet_group_name=f"my-rds-subnet-group-{name_alias}"
+            db_subnet_group_name=get_resource_name("subnet-group"),
         )
 
-        # Outputs if needed
+        # Outputs
         self.vpc = vpc
         self.rds_security_group = rds_sg
-        self.db_subnet_group = db_subnet_group
