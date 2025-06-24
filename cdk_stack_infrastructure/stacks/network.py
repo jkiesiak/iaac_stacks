@@ -13,14 +13,12 @@ class VpcStack(Stack):
         self,
         scope: Construct,
         id: str,
-        region_aws: str = "eu-west-1",
         env: str = "dev",
         **kwargs,
     ):
         super().__init__(scope, id, **kwargs)
 
         self.env = env
-        azs = [f"{region_aws}a", f"{region_aws}b"]
 
         # Create the VPC
         vpc = ec2.Vpc(
@@ -28,7 +26,6 @@ class VpcStack(Stack):
             f"MyVpc-{self.env}",
             vpc_name=get_resource_name("vpc", self.env),
             cidr="10.0.0.0/16",
-            availability_zones=azs,  # default managed by cdk
             max_azs=2,
             nat_gateways=1,
             subnet_configuration=[
