@@ -25,3 +25,4 @@ TODO.txt
 .venv/
 cdk.out/
 __pycache__/
+cdk.out-*

@@ -23,12 +23,12 @@ class RdsPostgresStack(Stack):
         id: str,
         vpc: ec2.IVpc,
         rds_security_group: ec2.ISecurityGroup,
-        env: str = "dev",
+        env: str,
+        is_development: bool = True,
         **kwargs,
     ):
         super().__init__(scope, id, **kwargs)
 
-        is_development = True
         self.env = env
 
         # # Generate random password for RDS
@@ -78,9 +78,9 @@ class RdsPostgresStack(Stack):
             ),
             deletion_protection=not is_development,
             publicly_accessible=True,
-            multi_az=True,
+            multi_az=not is_development,
             copy_tags_to_snapshot=True,
-            enable_performance_insights=True,
+            enable_performance_insights=not is_development,
             # performance_insight_retention=rds.PerformanceInsightRetention.DEFAULT, default is 7 days in docs
             backup_retention=Duration.days(7),
             preferred_maintenance_window="Wed:04:06-Wed:04:36",
