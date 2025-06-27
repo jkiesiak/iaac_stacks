@@ -4,222 +4,136 @@ set -e
 # Default values
 PROFILE=""
 REGION="eu-west-1"
+STACK_NAME="MainStack-production"
+BUCKET_NAME="upload-stacks-in-json"
+PREFIX="nested"
 
-# Function to display usage
+# Usage info
 usage() {
-    echo "Usage: $0 -p <profile> [-r <region>] [-f]"
-    echo "  -p, --profile    AWS profile name (required)"
-    echo "  -r, --region     AWS region (default: eu-west-1)"
-    echo "  -f, --force      Skip confirmation prompt"
-    echo "  -h, --help       Show this help message"
-    echo ""
-    echo "Example:"
-    echo "  $0 -p user13"
-    echo "  $0 -p user13 -r us-east-1"
-    echo "  $0 -p user13 -f  # Skip confirmation"
+    echo "Usage: $0 -p <profile> [-r <region>] [-s <stack-name>] [-b <bucket-name>]"
+    echo "  -p, --profile      AWS profile name (required)"
+    echo "  -r, --region       AWS region (default: eu-west-1)"
+    echo "  -s, --stack-name   CloudFormation stack name (default: MainStack-production)"
+    echo "  -b, --bucket-name  S3 bucket name (default: upload-stacks-in-json)"
+    echo "  -f, --force        Skip confirmation prompts"
+    echo "  -h, --help         Show this help message"
     exit 1
 }
 
-# Parse command line arguments
+# Parse arguments
 FORCE=false
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -p|--profile)
-            PROFILE="$2"
-            shift 2
-            ;;
-        -r|--region)
-            REGION="$2"
-            shift 2
-            ;;
-        -f|--force)
-            FORCE=true
-            shift
-            ;;
-        -h|--help)
-            usage
-            ;;
-        *)
-            echo "Unknown option: $1"
-            usage
-            ;;
+        -p|--profile) PROFILE="$2"; shift 2 ;;
+        -r|--region) REGION="$2"; shift 2 ;;
+        -s|--stack-name) STACK_NAME="$2"; shift 2 ;;
+        -b|--bucket-name) BUCKET_NAME="$2"; shift 2 ;;
+        -f|--force) FORCE=true; shift ;;
+        -h|--help) usage ;;
+        *) echo "Unknown option: $1"; usage ;;
     esac
 done
 
-# Check if profile is provided
+# Validate profile
 if [[ -z "$PROFILE" ]]; then
-    echo "Error: AWS profile is required!"
-    echo ""
+    echo "❌ Error: AWS profile is required."
     usage
 fi
 
-# Verify profile exists
 if ! aws configure list-profiles | grep -q "^$PROFILE$"; then
-    echo "Error: AWS profile '$PROFILE' not found!"
-    echo "Available profiles:"
+    echo "❌ AWS profile '$PROFILE' not found!"
     aws configure list-profiles
     exit 1
 fi
 
-# Test profile access
-echo "Testing AWS profile '$PROFILE'..."
-if ! aws sts get-caller-identity --profile "$PROFILE" >/dev/null 2>&1; then
-    echo "Error: Cannot access AWS with profile '$PROFILE'. Please check your credentials."
+# Test access
+echo "🔐 Validating AWS profile '$PROFILE'..."
+aws sts get-caller-identity --profile "$PROFILE" >/dev/null || {
+    echo "❌ Cannot access AWS with profile '$PROFILE'."
     exit 1
-fi
-
-echo "✅ AWS Profile '$PROFILE' is valid"
-echo "🌍 Working with region: $REGION"
+}
+echo "✅ Profile valid. Region: $REGION"
 echo ""
-
-# Define stacks in reverse order (opposite of deployment order)
-stacks=(
-    "api-gateway-stack:API Gateway Stack"
-    "lambda-rds-stack:Lambda RDS Stack"
-    "rds-stack:RDS Stack"
-    "vpc-stack:VPC Stack"
-)
 
 # Function to check if stack exists
-stack_exists() {
-    local stack_name=$1
-    aws cloudformation describe-stacks \
-        --stack-name "$stack_name" \
+check_stack_exists() {
+    aws cloudformation describe-stacks --stack-name "$1" --profile "$PROFILE" --region "$REGION" >/dev/null 2>&1
+}
+
+# Function to check if bucket exists
+check_bucket_exists() {
+    aws s3api head-bucket --bucket "$1" --profile "$PROFILE" 2>/dev/null
+}
+
+# Function to wait for stack deletion
+wait_for_stack_deletion() {
+    local stack_name="$1"
+    echo "⏳ Waiting for stack '$stack_name' to be deleted..."
+
+    while check_stack_exists "$stack_name"; do
+        local status=$(aws cloudformation describe-stacks --stack-name "$stack_name" --profile "$PROFILE" --region "$REGION" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DELETE_COMPLETE")
+
+        if [[ "$status" == "DELETE_FAILED" ]]; then
+            echo "❌ Stack deletion failed. Check AWS Console for details."
+            exit 1
+        fi
+
+        echo "   Stack status: $status"
+        sleep 10
+    done
+    echo "✅ Stack '$stack_name' deleted successfully!"
+}
+
+
+echo ""
+echo "🗑️  Starting resource deletion process..."
+echo ""
+
+# Delete CloudFormation Stack
+if check_stack_exists "$STACK_NAME"; then
+    echo "🔄 Deleting CloudFormation stack '$STACK_NAME'..."
+    aws cloudformation delete-stack \
+        --stack-name "$STACK_NAME" \
         --profile "$PROFILE" \
-        --region "$REGION" \
-        --query 'Stacks[0].StackStatus' \
-        --output text >/dev/null 2>&1
-}
+        --region "$REGION"
 
-# Function to delete stack
-delete_stack() {
-    local stack_name=$1
-    local description=$2
-
-    echo "🗑️  Deleting $description..."
-
-    # Check if stack exists
-    if stack_exists "$stack_name"; then
-        # Get current stack status
-        local stack_status
-        stack_status=$(aws cloudformation describe-stacks \
-            --stack-name "$stack_name" \
-            --profile "$PROFILE" \
-            --region "$REGION" \
-            --query 'Stacks[0].StackStatus' \
-            --output text 2>/dev/null)
-
-        if [[ "$stack_status" == *"DELETE_IN_PROGRESS"* ]]; then
-            echo "⏳ Stack is already being deleted. Waiting for completion..."
-        elif [[ "$stack_status" == *"DELETE_COMPLETE"* ]]; then
-            echo "✅ Stack is already deleted"
-            return 0
-        else
-            # Delete the stack
-            if aws cloudformation delete-stack \
-                --stack-name "$stack_name" \
-                --profile "$PROFILE" \
-                --region "$REGION"; then
-                echo "⏳ Waiting for $description deletion to complete..."
-            else
-                echo "❌ Failed to initiate deletion of $description"
-                return 1
-            fi
-        fi
-
-        # Wait for stack deletion to complete (with timeout)
-        echo "   Waiting for stack deletion (this may take several minutes)..."
-        if aws cloudformation wait stack-delete-complete \
-            --stack-name "$stack_name" \
-            --profile "$PROFILE" \
-            --region "$REGION" \
-            --cli-read-timeout 1800 \
-            --cli-connect-timeout 60; then
-            echo "✅ $description deleted successfully"
-        else
-            echo "❌ Failed to delete $description or deletion timed out"
-            echo "   Check the CloudFormation console for more details"
-            return 1
-        fi
-    else
-        echo "⚠️  Stack '$stack_name' does not exist or is already deleted"
-    fi
-    echo ""
-}
-
-# Check which stacks exist
-echo "🔍 Checking existing stacks..."
-existing_stacks=()
-for stack_info in "${stacks[@]}"; do
-    IFS=':' read -r stack_name description <<< "$stack_info"
-    if stack_exists "$stack_name"; then
-        existing_stacks+=("$stack_info")
-        echo "  ✓ $stack_name exists"
-    else
-        echo "  - $stack_name (not found)"
-    fi
-done
-echo ""
-
-# Exit if no stacks to delete
-if [[ ${#existing_stacks[@]} -eq 0 ]]; then
-    echo "✅ No stacks found to delete!"
-    exit 0
-fi
-
-# Show what will be deleted
-echo "🚨 WARNING: This will delete the following stacks:"
-for stack_info in "${existing_stacks[@]}"; do
-    IFS=':' read -r stack_name description <<< "$stack_info"
-    echo "  🗑️  $stack_name ($description)"
-done
-echo ""
-echo "⚠️  This action is IRREVERSIBLE!"
-echo "⚠️  All resources in these stacks will be permanently deleted!"
-echo ""
-
-
-# Delete stacks in reverse order
-echo "🚀 Starting stack deletion process..."
-echo ""
-
-failed_deletions=()
-for stack_info in "${existing_stacks[@]}"; do
-    IFS=':' read -r stack_name description <<< "$stack_info"
-    if ! delete_stack "$stack_name" "$description"; then
-        failed_deletions+=("$stack_name")
-    fi
-done
-
-# Summary
-echo "📊 Deletion Summary:"
-echo "✅ Successfully deleted: ${#successful_deletions[@]} stack(s)"
-if [[ ${#successful_deletions[@]} -gt 0 ]]; then
-    for stack in "${successful_deletions[@]}"; do
-        echo "  ✓ $stack"
-    done
-fi
-
-if [[ ${#failed_deletions[@]} -gt 0 ]]; then
-    echo ""
-    echo "❌ Failed to delete: ${#failed_deletions[@]} stack(s)"
-    for stack in "${failed_deletions[@]}"; do
-        echo "  ✗ $stack"
-    done
-    echo ""
-    echo "💡 Troubleshooting tips:"
-    echo "  1. Check if S3 buckets need to be emptied manually"
-    echo "  2. Check for resources with DeletionPolicy: Retain"
-    echo "  3. Look for cross-stack references preventing deletion"
-    echo "  4. Check CloudFormation console for detailed error messages"
-    echo ""
-    echo "🔗 Check stack events:"
-    for stack in "${failed_deletions[@]}"; do
-        echo "  aws cloudformation describe-stack-events --stack-name $stack --profile $PROFILE --region $REGION"
-    done
-    echo ""
-    exit 1
+    wait_for_stack_deletion "$STACK_NAME"
 else
-    echo ""
-    echo "🎉 All stacks have been successfully deleted!"
+    echo "ℹ️  Stack '$STACK_NAME' does not exist or is already deleted."
 fi
+
+# Delete S3 bucket contents
+if check_bucket_exists "$BUCKET_NAME"; then
+    echo "🔄 Deleting S3 bucket contents from s3://$BUCKET_NAME/$PREFIX/..."
+
+    # List and delete objects with the prefix
+    objects=$(aws s3api list-objects-v2 --bucket "$BUCKET_NAME" --prefix "$PREFIX/" --profile "$PROFILE" --query 'Contents[].Key' --output text 2>/dev/null || echo "")
+
+    if [[ -n "$objects" && "$objects" != "None" ]]; then
+        echo "   Found objects to delete:"
+        echo "$objects" | tr '\t' '\n' | sed 's/^/     - /'
+
+        aws s3 rm "s3://$BUCKET_NAME/$PREFIX/" --recursive --profile "$PROFILE"
+        echo "✅ S3 bucket contents deleted successfully!"
+    else
+        echo "ℹ️  No objects found with prefix '$PREFIX/' in bucket '$BUCKET_NAME'."
+    fi
+
+    # Optional: Delete the entire bucket (uncomment if needed)
+    # echo "🔄 Deleting S3 bucket '$BUCKET_NAME'..."
+    # aws s3 rb "s3://$BUCKET_NAME" --profile "$PROFILE"
+    # echo "✅ S3 bucket deleted successfully!"
+
+else
+    echo "ℹ️  Bucket '$BUCKET_NAME' does not exist or is not accessible."
+fi
+
+echo ""
+echo "🎉 Resource deletion completed!"
+echo ""
+echo "Summary:"
+echo "  ✅ CloudFormation stack '$STACK_NAME' - Deleted"
+echo "  ✅ S3 objects in s3://$BUCKET_NAME/$PREFIX/ - Deleted"
+echo "  ℹ️  S3 bucket '$BUCKET_NAME' - Preserved (objects only deleted)"
+echo ""
+echo "Note: If you want to delete the entire S3 bucket, uncomment the relevant lines in the script."

@@ -1,26 +1,43 @@
 {
  "Resources": {
-  "S3EventDataBucketpolka294FB66A": {
+  "S3EventDataBucketproductionF9AC8078": {
    "Type": "AWS::S3::Bucket",
    "Properties": {
+    "BucketName": "s3-event-data-production",
     "Tags": [
      {
       "Key": "aws-cdk:auto-delete-objects",
       "Value": "true"
+     },
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
      }
     ]
    },
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete",
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3EventDataBucket-polka/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3EventDataBucket-production/Resource"
    }
   },
-  "S3EventDataBucketpolkaPolicy1DFA6DCA": {
+  "S3EventDataBucketproductionPolicy61EB77CB": {
    "Type": "AWS::S3::BucketPolicy",
    "Properties": {
     "Bucket": {
-     "Ref": "S3EventDataBucketpolka294FB66A"
+     "Ref": "S3EventDataBucketproductionF9AC8078"
     },
     "PolicyDocument": {
      "Statement": [
@@ -43,7 +60,7 @@
        "Resource": [
         {
          "Fn::GetAtt": [
-          "S3EventDataBucketpolka294FB66A",
+          "S3EventDataBucketproductionF9AC8078",
           "Arn"
          ]
         },
@@ -53,7 +70,7 @@
           [
            {
             "Fn::GetAtt": [
-             "S3EventDataBucketpolka294FB66A",
+             "S3EventDataBucketproductionF9AC8078",
              "Arn"
             ]
            },
@@ -68,10 +85,10 @@
     }
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3EventDataBucket-polka/Policy/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3EventDataBucket-production/Policy/Resource"
    }
   },
-  "S3EventDataBucketpolkaAutoDeleteObjectsCustomResourceF57B736D": {
+  "S3EventDataBucketproductionAutoDeleteObjectsCustomResource10619E06": {
    "Type": "Custom::S3AutoDeleteObjects",
    "Properties": {
     "ServiceToken": {
@@ -81,19 +98,19 @@
      ]
     },
     "BucketName": {
-     "Ref": "S3EventDataBucketpolka294FB66A"
+     "Ref": "S3EventDataBucketproductionF9AC8078"
     }
    },
    "DependsOn": [
-    "S3EventDataBucketpolkaPolicy1DFA6DCA"
+    "S3EventDataBucketproductionPolicy61EB77CB"
    ],
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete",
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3EventDataBucket-polka/AutoDeleteObjectsCustomResource/Default"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3EventDataBucket-production/AutoDeleteObjectsCustomResource/Default"
    }
   },
-  "S3EventDataBucketpolkaNotifications78859BC6": {
+  "S3EventDataBucketproductionNotificationsD0E95E8E": {
    "Type": "Custom::S3BucketNotifications",
    "Properties": {
     "ServiceToken": {
@@ -103,7 +120,7 @@
      ]
     },
     "BucketName": {
-     "Ref": "S3EventDataBucketpolka294FB66A"
+     "Ref": "S3EventDataBucketproductionF9AC8078"
     },
     "NotificationConfiguration": {
      "EventBridgeConfiguration": {}
@@ -112,10 +129,10 @@
     "SkipDestinationValidation": false
    },
    "DependsOn": [
-    "S3EventDataBucketpolkaPolicy1DFA6DCA"
+    "S3EventDataBucketproductionPolicy61EB77CB"
    ],
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3EventDataBucket-polka/Notifications/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3EventDataBucket-production/Notifications/Resource"
    }
   },
   "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
@@ -140,7 +157,7 @@
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
    }
   },
   "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
@@ -176,7 +193,7 @@
       [
        "Lambda function for auto-deleting objects in ",
        {
-        "Ref": "S3EventDataBucketpolka294FB66A"
+        "Ref": "S3EventDataBucketproductionF9AC8078"
        },
        " S3 bucket."
       ]
@@ -187,7 +204,7 @@
     "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
    ],
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
     "aws:asset:path": "asset.faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6",
     "aws:asset:property": "Code"
    }
@@ -220,10 +237,28 @@
        ]
       ]
      }
+    ],
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Role/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Role/Resource"
    }
   },
   "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36": {
@@ -247,7 +282,7 @@
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Role/DefaultPolicy/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Role/DefaultPolicy/Resource"
    }
   },
   "BucketNotificationsHandler050a0587b7544547bf325f094a3db8347ECC3691": {
@@ -265,37 +300,72 @@
      ]
     },
     "Runtime": "python3.11",
-    "Timeout": 300
+    "Timeout": 300,
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
    },
    "DependsOn": [
     "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
     "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC"
    ],
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Resource"
    }
   },
-  "S3BackupDataBucketpolkaCA922105": {
+  "S3BackupDataBucketproduction5B83CAD4": {
    "Type": "AWS::S3::Bucket",
    "Properties": {
+    "BucketName": "s3-backup-data-production",
     "Tags": [
      {
       "Key": "aws-cdk:auto-delete-objects",
       "Value": "true"
+     },
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
      }
     ]
    },
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete",
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3BackupDataBucket-polka/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3BackupDataBucket-production/Resource"
    }
   },
-  "S3BackupDataBucketpolkaPolicy5790D436": {
+  "S3BackupDataBucketproductionPolicyF592156F": {
    "Type": "AWS::S3::BucketPolicy",
    "Properties": {
     "Bucket": {
-     "Ref": "S3BackupDataBucketpolkaCA922105"
+     "Ref": "S3BackupDataBucketproduction5B83CAD4"
     },
     "PolicyDocument": {
      "Statement": [
@@ -318,7 +388,7 @@
        "Resource": [
         {
          "Fn::GetAtt": [
-          "S3BackupDataBucketpolkaCA922105",
+          "S3BackupDataBucketproduction5B83CAD4",
           "Arn"
          ]
         },
@@ -328,7 +398,7 @@
           [
            {
             "Fn::GetAtt": [
-             "S3BackupDataBucketpolkaCA922105",
+             "S3BackupDataBucketproduction5B83CAD4",
              "Arn"
             ]
            },
@@ -343,10 +413,10 @@
     }
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3BackupDataBucket-polka/Policy/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3BackupDataBucket-production/Policy/Resource"
    }
   },
-  "S3BackupDataBucketpolkaAutoDeleteObjectsCustomResource3F1BD8DE": {
+  "S3BackupDataBucketproductionAutoDeleteObjectsCustomResourceE4765505": {
    "Type": "Custom::S3AutoDeleteObjects",
    "Properties": {
     "ServiceToken": {
@@ -356,19 +426,19 @@
      ]
     },
     "BucketName": {
-     "Ref": "S3BackupDataBucketpolkaCA922105"
+     "Ref": "S3BackupDataBucketproduction5B83CAD4"
     }
    },
    "DependsOn": [
-    "S3BackupDataBucketpolkaPolicy5790D436"
+    "S3BackupDataBucketproductionPolicyF592156F"
    ],
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete",
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3BackupDataBucket-polka/AutoDeleteObjectsCustomResource/Default"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3BackupDataBucket-production/AutoDeleteObjectsCustomResource/Default"
    }
   },
-  "LambdaInsertDataIntoRDSpolkaBB6378B1": {
+  "LambdaInsertDataIntoRDSproductionEBBD7D24": {
    "Type": "AWS::IAM::Role",
    "Properties": {
     "AssumeRolePolicyDocument": {
@@ -385,19 +455,38 @@
     },
     "ManagedPolicyArns": [
      {
-      "Ref": "LambdaEssentialPolicy2BB2C00C"
+      "Ref": "LambdaEssentialPolicyproductionD3B35AAB"
+     }
+    ],
+    "RoleName": "lambda-insert-data-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
      }
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/LambdaInsertDataIntoRDS-polka/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/LambdaInsertDataIntoRDS-production/Resource"
    }
   },
-  "LambdaEssentialPolicy2BB2C00C": {
+  "LambdaEssentialPolicyproductionD3B35AAB": {
    "Type": "AWS::IAM::ManagedPolicy",
    "Properties": {
     "Description": "",
-    "ManagedPolicyName": "lambda_insert_data_into_rds-policy-polka",
+    "ManagedPolicyName": "lambda_insert_data_into_rds_policy-production",
     "Path": "/",
     "PolicyDocument": {
      "Statement": [
@@ -434,7 +523,7 @@
        "Resource": [
         {
          "Fn::GetAtt": [
-          "S3EventDataBucketpolka294FB66A",
+          "S3EventDataBucketproductionF9AC8078",
           "Arn"
          ]
         },
@@ -444,7 +533,7 @@
           [
            {
             "Fn::GetAtt": [
-             "S3EventDataBucketpolka294FB66A",
+             "S3EventDataBucketproductionF9AC8078",
              "Arn"
             ]
            },
@@ -479,7 +568,7 @@
           },
           ":db:",
           {
-           "Fn::ImportValue": "RDSStack:ExportsOutputRefPostgresRdsInstance8824E7E1CB368357"
+           "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefPostgresRdsInstanceproduction9C9C29B0A991D2E4"
           }
          ]
         ]
@@ -492,7 +581,7 @@
        ],
        "Effect": "Allow",
        "Resource": {
-        "Fn::ImportValue": "RDSStack:ExportsOutputRefRdsPasswordSecretpolkaF6D984A83B813B7C"
+        "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
        }
       }
      ],
@@ -500,10 +589,10 @@
     }
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/LambdaEssentialPolicy/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/LambdaEssentialPolicy-production/Resource"
    }
   },
-  "Pg8000LayerE2921C0F": {
+  "Pg8000Layerproduction03E1DD11": {
    "Type": "AWS::Lambda::LayerVersion",
    "Properties": {
     "CompatibleRuntimes": [
@@ -519,13 +608,13 @@
     "LayerName": "python_pg8000_layer"
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/Pg8000Layer/Resource",
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/Pg8000Layer-production/Resource",
     "aws:asset:path": "asset.435172d93610e5125475f5662a6e6c4da3548f90fbbd30cc9cdbef9c00ef1216.zip",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Content"
    }
   },
-  "LoggingLayer558643E6": {
+  "LoggingLayerproduction395811CC": {
    "Type": "AWS::Lambda::LayerVersion",
    "Properties": {
     "CompatibleRuntimes": [
@@ -541,13 +630,13 @@
     "LayerName": "python_logging_layer"
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/LoggingLayer/Resource",
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/LoggingLayer-production/Resource",
     "aws:asset:path": "asset.fa044bd72b7a666d3969e5eb04fc6f24ddfaca42212cd5586b94b399de96d0fa.zip",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Content"
    }
   },
-  "InsertDataIntoRdspolkaC354EF67": {
+  "InsertDataIntoRdsproductionEA156E3E": {
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
@@ -559,13 +648,13 @@
     "Environment": {
      "Variables": {
       "S3_BACKUP_DATA": {
-       "Ref": "S3BackupDataBucketpolkaCA922105"
+       "Ref": "S3BackupDataBucketproduction5B83CAD4"
       },
       "S3_EVENT_DATA": {
-       "Ref": "S3EventDataBucketpolka294FB66A"
+       "Ref": "S3EventDataBucketproductionF9AC8078"
       },
       "RDS_HOST": {
-       "Fn::ImportValue": "RDSStack:ExportsOutputFnGetAttPostgresRdsInstance8824E7E1EndpointAddressC5B72BA5"
+       "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputFnGetAttPostgresRdsInstanceproduction9C9C29B0EndpointAddressD8244D70"
       },
       "SSM_NAME": {
        "Fn::Join": [
@@ -584,7 +673,7 @@
                 "Fn::Split": [
                  ":",
                  {
-                  "Fn::ImportValue": "RDSStack:ExportsOutputRefRdsPasswordSecretpolkaF6D984A83B813B7C"
+                  "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
                  }
                 ]
                }
@@ -607,7 +696,30 @@
                 "Fn::Split": [
                  ":",
                  {
-                  "Fn::ImportValue": "RDSStack:ExportsOutputRefRdsPasswordSecretpolkaF6D984A83B813B7C"
+                  "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           2,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
                  }
                 ]
                }
@@ -623,35 +735,54 @@
       "RDS_DB": "database_rds"
      }
     },
+    "FunctionName": "lambda_insert_data_into_rds-production",
     "Handler": "lambda_handler.lambda_handler",
     "Layers": [
      {
-      "Ref": "Pg8000LayerE2921C0F"
+      "Ref": "Pg8000Layerproduction03E1DD11"
      },
      {
-      "Ref": "LoggingLayer558643E6"
+      "Ref": "LoggingLayerproduction395811CC"
      }
     ],
     "Role": {
      "Fn::GetAtt": [
-      "LambdaInsertDataIntoRDSpolkaBB6378B1",
+      "LambdaInsertDataIntoRDSproductionEBBD7D24",
       "Arn"
      ]
     },
     "Runtime": "python3.8",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
     "Timeout": 300
    },
    "DependsOn": [
-    "LambdaInsertDataIntoRDSpolkaBB6378B1"
+    "LambdaInsertDataIntoRDSproductionEBBD7D24"
    ],
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/InsertDataIntoRds-polka/Resource",
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/InsertDataIntoRds-production/Resource",
     "aws:asset:path": "asset.46e7fbabc0f062b9d578e0fdc450f738321a57274a508a303f152c9767c12ed5",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
   },
-  "LambdaStoreBackupRolepolkaB2361855": {
+  "LambdaStoreBackupRoleproduction5DAABCC2": {
    "Type": "AWS::IAM::Role",
    "Properties": {
     "AssumeRolePolicyDocument": {
@@ -668,18 +799,38 @@
     },
     "ManagedPolicyArns": [
      {
-      "Ref": "LambdaStoreBackupPolicypolkaA7C7EEDF"
+      "Ref": "LambdaStoreBackupPolicyproductionCE5D48E9"
+     }
+    ],
+    "RoleName": "lambda-store-backup-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
      }
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/LambdaStoreBackupRole-polka/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/LambdaStoreBackupRole-production/Resource"
    }
   },
-  "LambdaStoreBackupPolicypolkaA7C7EEDF": {
+  "LambdaStoreBackupPolicyproductionCE5D48E9": {
    "Type": "AWS::IAM::ManagedPolicy",
    "Properties": {
     "Description": "",
+    "ManagedPolicyName": "lambda_store_backup-policy-production",
     "Path": "/",
     "PolicyDocument": {
      "Statement": [
@@ -717,7 +868,7 @@
        "Resource": [
         {
          "Fn::GetAtt": [
-          "S3EventDataBucketpolka294FB66A",
+          "S3EventDataBucketproductionF9AC8078",
           "Arn"
          ]
         },
@@ -727,7 +878,7 @@
           [
            {
             "Fn::GetAtt": [
-             "S3EventDataBucketpolka294FB66A",
+             "S3EventDataBucketproductionF9AC8078",
              "Arn"
             ]
            },
@@ -749,7 +900,7 @@
          [
           {
            "Fn::GetAtt": [
-            "S3BackupDataBucketpolkaCA922105",
+            "S3BackupDataBucketproduction5B83CAD4",
             "Arn"
            ]
           },
@@ -763,10 +914,10 @@
     }
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/LambdaStoreBackupPolicy-polka/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/LambdaStoreBackupPolicy-production/Resource"
    }
   },
-  "LambdaStoreBackuppolkaAF9A9026": {
+  "LambdaStoreBackupproductionD17DFFF2": {
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
@@ -778,39 +929,58 @@
     "Environment": {
      "Variables": {
       "S3_BACKUP_DATA": {
-       "Ref": "S3BackupDataBucketpolkaCA922105"
+       "Ref": "S3BackupDataBucketproduction5B83CAD4"
       },
       "S3_EVENT_DATA": {
-       "Ref": "S3EventDataBucketpolka294FB66A"
+       "Ref": "S3EventDataBucketproductionF9AC8078"
       }
      }
     },
+    "FunctionName": "lambda_store_backup-production",
     "Handler": "lambda_handler.lambda_handler",
     "Layers": [
      {
-      "Ref": "LoggingLayer558643E6"
+      "Ref": "LoggingLayerproduction395811CC"
      }
     ],
     "Role": {
      "Fn::GetAtt": [
-      "LambdaStoreBackupRolepolkaB2361855",
+      "LambdaStoreBackupRoleproduction5DAABCC2",
       "Arn"
      ]
     },
     "Runtime": "python3.9",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
     "Timeout": 300
    },
    "DependsOn": [
-    "LambdaStoreBackupRolepolkaB2361855"
+    "LambdaStoreBackupRoleproduction5DAABCC2"
    ],
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/LambdaStoreBackup-polka/Resource",
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/LambdaStoreBackup-production/Resource",
     "aws:asset:path": "asset.dd0d406d77d99830e5da6bd377174dba05a676c716a30ec1f6db9792a51d50d4",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
   },
-  "StepFunctionExecutionRoleC2E82F18": {
+  "StepFunctionExecutionRoleproduction59826D5C": {
    "Type": "AWS::IAM::Role",
    "Properties": {
     "AssumeRolePolicyDocument": {
@@ -824,13 +994,32 @@
       }
      ],
      "Version": "2012-10-17"
-    }
+    },
+    "RoleName": "step-funct-execution-role-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/StepFunctionExecutionRole/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/StepFunctionExecutionRole-production/Resource"
    }
   },
-  "StepFunctionExecutionRoleDefaultPolicy208E546A": {
+  "StepFunctionExecutionRoleproductionDefaultPolicy7902FBEA": {
    "Type": "AWS::IAM::Policy",
    "Properties": {
     "PolicyDocument": {
@@ -846,7 +1035,7 @@
        "Resource": [
         {
          "Fn::GetAtt": [
-          "InsertDataIntoRdspolkaC354EF67",
+          "InsertDataIntoRdsproductionEA156E3E",
           "Arn"
          ]
         },
@@ -856,7 +1045,7 @@
           [
            {
             "Fn::GetAtt": [
-             "InsertDataIntoRdspolkaC354EF67",
+             "InsertDataIntoRdsproductionEA156E3E",
              "Arn"
             ]
            },
@@ -872,7 +1061,7 @@
        "Resource": [
         {
          "Fn::GetAtt": [
-          "LambdaStoreBackuppolkaAF9A9026",
+          "LambdaStoreBackupproductionD17DFFF2",
           "Arn"
          ]
         },
@@ -882,7 +1071,7 @@
           [
            {
             "Fn::GetAtt": [
-             "LambdaStoreBackuppolkaAF9A9026",
+             "LambdaStoreBackupproductionD17DFFF2",
              "Arn"
             ]
            },
@@ -895,43 +1084,43 @@
      ],
      "Version": "2012-10-17"
     },
-    "PolicyName": "StepFunctionExecutionRoleDefaultPolicy208E546A",
+    "PolicyName": "StepFunctionExecutionRoleproductionDefaultPolicy7902FBEA",
     "Roles": [
      {
-      "Ref": "StepFunctionExecutionRoleC2E82F18"
+      "Ref": "StepFunctionExecutionRoleproduction59826D5C"
      }
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/StepFunctionExecutionRole/DefaultPolicy/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/StepFunctionExecutionRole-production/DefaultPolicy/Resource"
    }
   },
-  "StepFunction1F935F84": {
+  "StepFunctionsproduction3A920269": {
    "Type": "AWS::StepFunctions::StateMachine",
    "Properties": {
     "DefinitionString": {
      "Fn::Join": [
       "",
       [
-       "{\"StartAt\":\"InsertIntoRDS\",\"States\":{\"InsertIntoRDS\":{\"Next\":\"StoreBackup\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2},{\"ErrorEquals\":[\"States.ALL\"],\"IntervalSeconds\":2,\"MaxAttempts\":3,\"BackoffRate\":2}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+       "{\"StartAt\":\"InsertIntoRDS-production\",\"States\":{\"InsertIntoRDS-production\":{\"Next\":\"StoreBackup-production\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2},{\"ErrorEquals\":[\"States.ALL\"],\"IntervalSeconds\":2,\"MaxAttempts\":3,\"BackoffRate\":2}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
        {
         "Ref": "AWS::Partition"
        },
        ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
        {
         "Fn::GetAtt": [
-         "InsertDataIntoRdspolkaC354EF67",
+         "InsertDataIntoRdsproductionEA156E3E",
          "Arn"
         ]
        },
-       "\",\"Payload.$\":\"$\"}},\"StoreBackup\":{\"End\":true,\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2},{\"ErrorEquals\":[\"States.ALL\"],\"IntervalSeconds\":2,\"MaxAttempts\":3,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.error\",\"Next\":\"StoreBackupFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+       "\",\"Payload.$\":\"$\"}},\"StoreBackup-production\":{\"End\":true,\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2},{\"ErrorEquals\":[\"States.ALL\"],\"IntervalSeconds\":2,\"MaxAttempts\":3,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.error\",\"Next\":\"StoreBackupFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
        {
         "Ref": "AWS::Partition"
        },
        ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
        {
         "Fn::GetAtt": [
-         "LambdaStoreBackuppolkaAF9A9026",
+         "LambdaStoreBackupproductionD17DFFF2",
          "Arn"
         ]
        },
@@ -941,22 +1130,41 @@
     },
     "RoleArn": {
      "Fn::GetAtt": [
-      "StepFunctionExecutionRoleC2E82F18",
+      "StepFunctionExecutionRoleproduction59826D5C",
       "Arn"
      ]
-    }
+    },
+    "StateMachineName": "step-functions-processing-flow-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
    },
    "DependsOn": [
-    "StepFunctionExecutionRoleDefaultPolicy208E546A",
-    "StepFunctionExecutionRoleC2E82F18"
+    "StepFunctionExecutionRoleproductionDefaultPolicy7902FBEA",
+    "StepFunctionExecutionRoleproduction59826D5C"
    ],
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete",
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/StepFunction/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/StepFunctions-production/Resource"
    }
   },
-  "S3PutObjectRuleF734CE29": {
+  "S3PutObjectRuleproduction20D6171A": {
    "Type": "AWS::Events::Rule",
    "Properties": {
     "EventPattern": {
@@ -964,7 +1172,7 @@
       "bucket": {
        "name": [
         {
-         "Ref": "S3EventDataBucketpolka294FB66A"
+         "Ref": "S3EventDataBucketproductionF9AC8078"
         }
        ]
       }
@@ -980,12 +1188,12 @@
     "Targets": [
      {
       "Arn": {
-       "Ref": "StepFunction1F935F84"
+       "Ref": "StepFunctionsproduction3A920269"
       },
       "Id": "Target0",
       "RoleArn": {
        "Fn::GetAtt": [
-        "EventBridgeInvokeRole445C30D3",
+        "EventBridgeInvokeRoleproduction4BA1C84F",
         "Arn"
        ]
       }
@@ -993,10 +1201,10 @@
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/S3PutObjectRule/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/S3PutObjectRule-production/Resource"
    }
   },
-  "EventBridgeInvokeRole445C30D3": {
+  "EventBridgeInvokeRoleproduction4BA1C84F": {
    "Type": "AWS::IAM::Role",
    "Properties": {
     "AssumeRolePolicyDocument": {
@@ -1011,13 +1219,31 @@
      ],
      "Version": "2012-10-17"
     },
-    "RoleName": "eventbridge-invoke-stepfunction-role-polka"
+    "RoleName": "invoke-stepfunctions-role-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/EventBridgeInvokeRole/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/EventBridgeInvokeRole-production/Resource"
    }
   },
-  "EventBridgeInvokeRoleDefaultPolicy0132B28A": {
+  "EventBridgeInvokeRoleproductionDefaultPolicyF7D44B1A": {
    "Type": "AWS::IAM::Policy",
    "Properties": {
     "PolicyDocument": {
@@ -1026,21 +1252,21 @@
        "Action": "states:StartExecution",
        "Effect": "Allow",
        "Resource": {
-        "Ref": "StepFunction1F935F84"
+        "Ref": "StepFunctionsproduction3A920269"
        }
       }
      ],
      "Version": "2012-10-17"
     },
-    "PolicyName": "EventBridgeInvokeRoleDefaultPolicy0132B28A",
+    "PolicyName": "EventBridgeInvokeRoleproductionDefaultPolicyF7D44B1A",
     "Roles": [
      {
-      "Ref": "EventBridgeInvokeRole445C30D3"
+      "Ref": "EventBridgeInvokeRoleproduction4BA1C84F"
      }
     ]
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/EventBridgeInvokeRole/DefaultPolicy/Resource"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/EventBridgeInvokeRole-production/DefaultPolicy/Resource"
    }
   },
   "CDKMetadata": {
@@ -1049,7 +1275,7 @@
     "Analytics": "v2:deflate64:H4sIAAAAAAAA/12QT4vCMBDFP4v3dFa3h909roKwYEEq7FXGdKyxbSKdiSIh333pH6nu6b0375eQyTssvj5gPsMbJ7qoktocIOwEdaXwxvvAKYSl1xWJWh3t6AbZutro+zQe8xCWyBSVwQZC7mrqqF6nQ6PL0GJJxTR/GURVY3MoEMIG79T+UsvG2Q57yWtvtYzFw0fF6R6ZSRi+O1EsdDmOLe8FuWLY9Nf/2Kur6BWAsEZTq52gUIb6ZGy/xXOOiq5khSHkftzR1xSjWnkW1+TEzrd6KJ58hpeLseU/atu6qymo7X5O9Q/eCZYd9yCi2t7l5OxbCos5fM7ObEzSeiumIcgH/QNPfVm10AEAAA=="
    },
    "Metadata": {
-    "aws:cdk:path": "LambdaRdsStack/CDKMetadata/Default"
+    "aws:cdk:path": "MainStack-production/LambdaRdsStack-production/CDKMetadata/Default"
    },
    "Condition": "CDKMetadataAvailable"
   }

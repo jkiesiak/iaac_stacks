@@ -1,0 +1,1050 @@
+{
+ "Resources": {
+  "MyVpcproductionDDD54809": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "vpc-production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/Resource"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "public-subnet-production"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1/Subnet"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet1RouteTableAB2D0C93": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1/RouteTable"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet1RouteTableAssociationDEFEF010": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet1RouteTableAB2D0C93"
+    },
+    "SubnetId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1/RouteTableAssociation"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet1DefaultRoute0FADAD03": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "MyVpcproductionIGWA2026142"
+    },
+    "RouteTableId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet1RouteTableAB2D0C93"
+    }
+   },
+   "DependsOn": [
+    "MyVpcproductionVPCGW86D230D1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1/DefaultRoute"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet1EIP0855844A": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1/EIP"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet1NATGatewayA34EA6C5": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "MyVpcproductionpublicsubnetproductionSubnet1EIP0855844A",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A"
+    },
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "DependsOn": [
+    "MyVpcproductionpublicsubnetproductionSubnet1DefaultRoute0FADAD03",
+    "MyVpcproductionpublicsubnetproductionSubnet1RouteTableAssociationDEFEF010"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet1/NATGateway"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet2Subnet507D9427": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "public-subnet-production"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet2"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet2/Subnet"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet2RouteTableF269971F": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet2"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet2/RouteTable"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet2RouteTableAssociation309B6380": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet2RouteTableF269971F"
+    },
+    "SubnetId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet2Subnet507D9427"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet2/RouteTableAssociation"
+   }
+  },
+  "MyVpcproductionpublicsubnetproductionSubnet2DefaultRoute23438661": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "MyVpcproductionIGWA2026142"
+    },
+    "RouteTableId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet2RouteTableF269971F"
+    }
+   },
+   "DependsOn": [
+    "MyVpcproductionVPCGW86D230D1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/public-subnet-productionSubnet2/DefaultRoute"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet1SubnetB1132DE7": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "private-subnet-production"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet1"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet1/Subnet"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet1RouteTable710377AF": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet1"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet1/RouteTable"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet1RouteTableAssociationBCFBCEAC": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MyVpcproductionprivatesubnetproductionSubnet1RouteTable710377AF"
+    },
+    "SubnetId": {
+     "Ref": "MyVpcproductionprivatesubnetproductionSubnet1SubnetB1132DE7"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet1/RouteTableAssociation"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet1DefaultRoute64126FA9": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet1NATGatewayA34EA6C5"
+    },
+    "RouteTableId": {
+     "Ref": "MyVpcproductionprivatesubnetproductionSubnet1RouteTable710377AF"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet1/DefaultRoute"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet2Subnet12A1B3C5": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "private-subnet-production"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet2"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet2/Subnet"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet2RouteTableD75F35B2": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet2"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet2/RouteTable"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet2RouteTableAssociation00BB8D46": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MyVpcproductionprivatesubnetproductionSubnet2RouteTableD75F35B2"
+    },
+    "SubnetId": {
+     "Ref": "MyVpcproductionprivatesubnetproductionSubnet2Subnet12A1B3C5"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet2/RouteTableAssociation"
+   }
+  },
+  "MyVpcproductionprivatesubnetproductionSubnet2DefaultRouteB6FCAF74": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "MyVpcproductionpublicsubnetproductionSubnet1NATGatewayA34EA6C5"
+    },
+    "RouteTableId": {
+     "Ref": "MyVpcproductionprivatesubnetproductionSubnet2RouteTableD75F35B2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/private-subnet-productionSubnet2/DefaultRoute"
+   }
+  },
+  "MyVpcproductionIGWA2026142": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Name",
+      "Value": "vpc-production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/IGW"
+   }
+  },
+  "MyVpcproductionVPCGW86D230D1": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "MyVpcproductionIGWA2026142"
+    },
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/MyVpc-production/VPCGW"
+   }
+  },
+  "RdsSecurityGroupproductionCF209931": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "MainStack-production/VpcStack-production/RdsSecurityGroupproduction",
+    "GroupName": "rds-sg-production",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     },
+     {
+      "CidrIpv6": "::/0",
+      "Description": "Allow PostgreSQL to IPv6",
+      "FromPort": 5432,
+      "IpProtocol": "tcp",
+      "ToPort": 5432
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow PostgreSQL access from IPv4",
+      "FromPort": 5432,
+      "IpProtocol": "tcp",
+      "ToPort": 5432
+     },
+     {
+      "CidrIpv6": "::/0",
+      "Description": "Allow PostgreSQL access from IPv6",
+      "FromPort": 5432,
+      "IpProtocol": "tcp",
+      "ToPort": 5432
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MyVpcproductionDDD54809"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/RdsSecurityGroupproduction/Resource"
+   }
+  },
+  "DbSubnetGroup": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for RDS instance",
+    "DBSubnetGroupName": "subnet-group-production",
+    "SubnetIds": [
+     {
+      "Ref": "MyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A"
+     },
+     {
+      "Ref": "MyVpcproductionpublicsubnetproductionSubnet2Subnet507D9427"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/DbSubnetGroup"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/02OwW7CMBBEv4W74wI90B5pqBAXZCUVV7RZFrEQ1sheN4oi/r0KQaSnmXkajWZuZ58LO51AEzM8XLKaK9uVCngx0MR9Rzi33e6GJj/KzuXGpapmLFMlpD0bXeGT0g9UNY18ZMsYPTIoe3mVe/O9cb1sQdeg1EBrXOBfUBqHN6IUhF6F4ckzLVUBT1cSNSVhCqztOvh0e3z4D+4mHKLNj7L6GqaftKDoU0C6G9fqycvbu51N7cfkHJmzkET5SrYY9A+49gOYLQEAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/VpcStack-production/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Outputs": {
+  "ExportsOutputRefMyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A17EDD9F2": {
+   "Value": {
+    "Ref": "MyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A"
+   },
+   "Export": {
+    "Name": "MainStackproductionVpcStackproductionCBA518B0:ExportsOutputRefMyVpcproductionpublicsubnetproductionSubnet1SubnetE6C3CE5A17EDD9F2"
+   }
+  },
+  "ExportsOutputRefMyVpcproductionpublicsubnetproductionSubnet2Subnet507D9427EAA48906": {
+   "Value": {
+    "Ref": "MyVpcproductionpublicsubnetproductionSubnet2Subnet507D9427"
+   },
+   "Export": {
+    "Name": "MainStackproductionVpcStackproductionCBA518B0:ExportsOutputRefMyVpcproductionpublicsubnetproductionSubnet2Subnet507D9427EAA48906"
+   }
+  },
+  "ExportsOutputFnGetAttRdsSecurityGroupproductionCF209931GroupId2B919B43": {
+   "Value": {
+    "Fn::GetAtt": [
+     "RdsSecurityGroupproductionCF209931",
+     "GroupId"
+    ]
+   },
+   "Export": {
+    "Name": "MainStackproductionVpcStackproductionCBA518B0:ExportsOutputFnGetAttRdsSecurityGroupproductionCF209931GroupId2B919B43"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
