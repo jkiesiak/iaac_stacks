@@ -13,7 +13,7 @@ class VpcStack(Stack):
         self,
         scope: Construct,
         id: str,
-        env: str = "dev",
+        env: str,
         **kwargs,
     ):
         super().__init__(scope, id, **kwargs)
@@ -25,7 +25,7 @@ class VpcStack(Stack):
             self,
             f"MyVpc-{self.env}",
             vpc_name=get_resource_name("vpc", self.env),
-            cidr="10.0.0.0/16",
+            ip_addresses=ec2.IpAddresses.cidr("10.0.0.0/16"),
             max_azs=2,
             nat_gateways=1,
             subnet_configuration=[

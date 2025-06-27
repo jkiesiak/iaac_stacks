@@ -23,7 +23,7 @@ class LambdaRdsStack(Stack):
         rds_endpoint_address: str,
         rds_secret_name: str,
         secret_arn: str,
-        env: str = "dev",
+        env: str,
         **kwargs,
     ):
         super().__init__(scope, id, **kwargs)
@@ -249,7 +249,7 @@ class LambdaRdsStack(Stack):
             state_machine_name=get_resource_name(
                 "step-functions-processing-flow", self.env
             ),
-            definition=definition,
+            definition_body=sfn.DefinitionBody.from_chainable(definition),
             role=step_role,
         )
 

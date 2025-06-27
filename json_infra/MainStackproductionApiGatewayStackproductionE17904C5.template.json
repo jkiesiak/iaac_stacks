@@ -1,0 +1,1933 @@
+{
+ "Resources": {
+  "ApiPasswordSecretproduction74C039E6": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "Rest Api access token to insert, update data",
+    "Name": "api-token-authorisation-production",
+    "SecretString": "{\"password\": \"AXBGUNEa%SiQWKo6\"}",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/ApiPasswordSecret-production/Resource"
+   }
+  },
+  "Pg8000LayerE2921C0F": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "CompatibleRuntimes": [
+     "python3.8",
+     "python3.9"
+    ],
+    "Content": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "435172d93610e5125475f5662a6e6c4da3548f90fbbd30cc9cdbef9c00ef1216.zip"
+    },
+    "LayerName": "python_pg8000_layer"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/Pg8000Layer/Resource",
+    "aws:asset:path": "asset.435172d93610e5125475f5662a6e6c4da3548f90fbbd30cc9cdbef9c00ef1216.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "LoggingLayer558643E6": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "CompatibleRuntimes": [
+     "python3.8",
+     "python3.9"
+    ],
+    "Content": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "fa044bd72b7a666d3969e5eb04fc6f24ddfaca42212cd5586b94b399de96d0fa.zip"
+    },
+    "LayerName": "python_logging_layer"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LoggingLayer/Resource",
+    "aws:asset:path": "asset.fa044bd72b7a666d3969e5eb04fc6f24ddfaca42212cd5586b94b399de96d0fa.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "RestApiproductionB9A4BADB": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "EndpointConfiguration": {
+     "Types": [
+      "REGIONAL"
+     ]
+    },
+    "Name": "Rest-Api-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Resource"
+   }
+  },
+  "RestApiproductionCloudWatchRole2023C8FF": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "apigateway.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/CloudWatchRole/Resource"
+   }
+  },
+  "RestApiproductionAccountCA7D6E17": {
+   "Type": "AWS::ApiGateway::Account",
+   "Properties": {
+    "CloudWatchRoleArn": {
+     "Fn::GetAtt": [
+      "RestApiproductionCloudWatchRole2023C8FF",
+      "Arn"
+     ]
+    }
+   },
+   "DependsOn": [
+    "RestApiproductionB9A4BADB"
+   ],
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Account"
+   }
+  },
+  "RestApiproductionDeployment91CD7D3Cb362a6da0936f343f040f8efa2a4faea": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "Automatically created by the RestApi construct",
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "DependsOn": [
+    "RestApiproductioncustomersGET63BC2DD9",
+    "RestApiproductioncustomersPUT937533AC",
+    "RestApiproductioncustomers506C96AC",
+    "RestApiproductionordersGET85F3E93C",
+    "RestApiproductionordersPUTFFDD2458",
+    "RestApiproductionorders2EEE2832"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Deployment/Resource"
+   }
+  },
+  "RestApiproductionDeploymentStageprodC391D743": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "DeploymentId": {
+     "Ref": "RestApiproductionDeployment91CD7D3Cb362a6da0936f343f040f8efa2a4faea"
+    },
+    "MethodSettings": [
+     {
+      "DataTraceEnabled": true,
+      "HttpMethod": "*",
+      "LoggingLevel": "INFO",
+      "MetricsEnabled": true,
+      "ResourcePath": "/*"
+     }
+    ],
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    },
+    "StageName": "prod",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "DependsOn": [
+    "RestApiproductionAccountCA7D6E17"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/DeploymentStage.prod/Resource"
+   }
+  },
+  "RestApiproductionorders2EEE2832": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "RestApiproductionB9A4BADB",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "orders",
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/Resource"
+   }
+  },
+  "RestApiproductionordersGETApiPermissionMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1GETordersD12E2276": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/",
+       {
+        "Ref": "RestApiproductionDeploymentStageprodC391D743"
+       },
+       "/GET/orders"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/GET/ApiPermission.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.GET..orders"
+   }
+  },
+  "RestApiproductionordersGETApiPermissionTestMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1GETordersA28E4E12": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/test-invoke-stage/GET/orders"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/GET/ApiPermission.Test.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.GET..orders"
+   }
+  },
+  "RestApiproductionordersGET85F3E93C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "CustomAuthorizerproduction20CC0718"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "LambdaRestApiproduction8DC8BB2A",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "RequestParameters": {
+     "method.request.header.Authorization": true,
+     "method.request.querystring.order_id": false
+    },
+    "ResourceId": {
+     "Ref": "RestApiproductionorders2EEE2832"
+    },
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/GET/Resource"
+   }
+  },
+  "RestApiproductionordersPUTApiPermissionMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1PUTordersEBF64B48": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/",
+       {
+        "Ref": "RestApiproductionDeploymentStageprodC391D743"
+       },
+       "/PUT/orders"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/PUT/ApiPermission.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.PUT..orders"
+   }
+  },
+  "RestApiproductionordersPUTApiPermissionTestMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1PUTorders1DA82E53": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/test-invoke-stage/PUT/orders"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/PUT/ApiPermission.Test.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.PUT..orders"
+   }
+  },
+  "RestApiproductionordersPUTFFDD2458": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "CustomAuthorizerproduction20CC0718"
+    },
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "LambdaRestApiproduction8DC8BB2A",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "RequestParameters": {
+     "method.request.header.Authorization": true,
+     "method.request.querystring.order_id": false
+    },
+    "ResourceId": {
+     "Ref": "RestApiproductionorders2EEE2832"
+    },
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/orders/PUT/Resource"
+   }
+  },
+  "RestApiproductioncustomers506C96AC": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "RestApiproductionB9A4BADB",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "customers",
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/Resource"
+   }
+  },
+  "RestApiproductioncustomersGETApiPermissionMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1GETcustomersFFDC8FB8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/",
+       {
+        "Ref": "RestApiproductionDeploymentStageprodC391D743"
+       },
+       "/GET/customers"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/GET/ApiPermission.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.GET..customers"
+   }
+  },
+  "RestApiproductioncustomersGETApiPermissionTestMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1GETcustomers76CD8A41": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/test-invoke-stage/GET/customers"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/GET/ApiPermission.Test.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.GET..customers"
+   }
+  },
+  "RestApiproductioncustomersGET63BC2DD9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "CustomAuthorizerproduction20CC0718"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "LambdaRestApiproduction8DC8BB2A",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "RequestParameters": {
+     "method.request.header.Authorization": true,
+     "method.request.querystring.customer_id": false
+    },
+    "ResourceId": {
+     "Ref": "RestApiproductioncustomers506C96AC"
+    },
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/GET/Resource"
+   }
+  },
+  "RestApiproductioncustomersPUTApiPermissionMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1PUTcustomers859B496F": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/",
+       {
+        "Ref": "RestApiproductionDeploymentStageprodC391D743"
+       },
+       "/PUT/customers"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/PUT/ApiPermission.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.PUT..customers"
+   }
+  },
+  "RestApiproductioncustomersPUTApiPermissionTestMainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1PUTcustomers62C282B8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaRestApiproduction8DC8BB2A",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/test-invoke-stage/PUT/customers"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/PUT/ApiPermission.Test.MainStackproductionApiGatewayStackproductionRestApiproductionABA4FAF1.PUT..customers"
+   }
+  },
+  "RestApiproductioncustomersPUT937533AC": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "CustomAuthorizerproduction20CC0718"
+    },
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "LambdaRestApiproduction8DC8BB2A",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "RequestParameters": {
+     "method.request.header.Authorization": true,
+     "method.request.querystring.customer_id": false
+    },
+    "ResourceId": {
+     "Ref": "RestApiproductioncustomers506C96AC"
+    },
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/RestApi-production/Default/customers/PUT/Resource"
+   }
+  },
+  "LambdaRestApiRoleproduction51F8EBB0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      },
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "apigateway.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "RoleName": "lambda_rest_api-production",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LambdaRestApiRole-production/Resource"
+   }
+  },
+  "LambdaRestApiRoleproductionDefaultPolicyBA40EC71": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "ApiPasswordSecretproduction74C039E6"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LambdaRestApiRoleproductionDefaultPolicyBA40EC71",
+    "Roles": [
+     {
+      "Ref": "LambdaRestApiRoleproduction51F8EBB0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LambdaRestApiRole-production/DefaultPolicy/Resource"
+   }
+  },
+  "LambdaRestApiPolicyproduction69C33BA3": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:aws:logs:",
+          {
+           "Ref": "AWS::Region"
+          },
+          ":",
+          {
+           "Ref": "AWS::AccountId"
+          },
+          ":*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Ref": "ApiPasswordSecretproduction74C039E6"
+        },
+        {
+         "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
+        }
+       ]
+      },
+      {
+       "Action": "rds-db:connect",
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "rds:DescribeDBInstances",
+        "rds-data:ExecuteStatement"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "lambda_rest_api_policy-production",
+    "Roles": [
+     {
+      "Ref": "LambdaRestApiRoleproduction51F8EBB0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LambdaRestApiPolicy-production/Resource"
+   }
+  },
+  "LambdaRestApiproduction8DC8BB2A": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "4b782ee171ae90e7c74560048d02adf1c658bac43e604cb2d388f074f5bd3997.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "SECRET_NAME": {
+       "Fn::Join": [
+        "-",
+        [
+         {
+          "Fn::Select": [
+           0,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           1,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           2,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           3,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       ]
+      },
+      "RDS_SECRET_NAME": {
+       "Fn::Join": [
+        "-",
+        [
+         {
+          "Fn::Select": [
+           0,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           1,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           2,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputRefRdsPasswordSecretproduction42A6E1A84C9B0334"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       ]
+      },
+      "DB_HOST": {
+       "Fn::ImportValue": "MainStackproductionRDSStackproduction3C5AE54B:ExportsOutputFnGetAttPostgresRdsInstanceproduction9C9C29B0EndpointAddressD8244D70"
+      }
+     }
+    },
+    "FunctionName": "lambda_rest_api-production",
+    "Handler": "lambda_handler.lambda_handler",
+    "Layers": [
+     {
+      "Ref": "Pg8000LayerE2921C0F"
+     },
+     {
+      "Ref": "LoggingLayer558643E6"
+     }
+    ],
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaRestApiRoleproduction51F8EBB0",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.9",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "DependsOn": [
+    "LambdaRestApiRoleproductionDefaultPolicyBA40EC71",
+    "LambdaRestApiRoleproduction51F8EBB0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LambdaRestApi-production/Resource",
+    "aws:asset:path": "asset.4b782ee171ae90e7c74560048d02adf1c658bac43e604cb2d388f074f5bd3997",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "LambdaTokenAuthorizerproduction9CB0DDFE": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "e62afe86736432de4aa2c52fcfc0b2c39b273de592a4da7f6054eb8f19e914c5.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "SECRET_NAME": {
+       "Fn::Join": [
+        "-",
+        [
+         {
+          "Fn::Select": [
+           0,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           1,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           2,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "Fn::Select": [
+           3,
+           {
+            "Fn::Split": [
+             "-",
+             {
+              "Fn::Select": [
+               6,
+               {
+                "Fn::Split": [
+                 ":",
+                 {
+                  "Ref": "ApiPasswordSecretproduction74C039E6"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       ]
+      }
+     }
+    },
+    "FunctionName": "lambda_grant_token_access-production",
+    "Handler": "lambda_handler.lambda_handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaRestApiRoleproduction51F8EBB0",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.9",
+    "Tags": [
+     {
+      "Key": "DeploymentTime",
+      "Value": "2025-06-25T15:34:29.895932"
+     },
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "Owner",
+      "Value": "Joanna Kiesiak"
+     },
+     {
+      "Key": "Project",
+      "Value": "my-stack"
+     }
+    ]
+   },
+   "DependsOn": [
+    "LambdaRestApiRoleproductionDefaultPolicyBA40EC71",
+    "LambdaRestApiRoleproduction51F8EBB0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LambdaTokenAuthorizer-production/Resource",
+    "aws:asset:path": "asset.e62afe86736432de4aa2c52fcfc0b2c39b273de592a4da7f6054eb8f19e914c5",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "LambdaTokenAuthorizerproductionMainStackproductionApiGatewayStackproductionCustomAuthorizerproductionFC0668B5PermissionsA49A7ED0": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "LambdaTokenAuthorizerproduction9CB0DDFE",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "RestApiproductionB9A4BADB"
+       },
+       "/authorizers/",
+       {
+        "Ref": "CustomAuthorizerproduction20CC0718"
+       }
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/LambdaTokenAuthorizer-production/MainStackproductionApiGatewayStackproductionCustomAuthorizerproductionFC0668B5:Permissions"
+   }
+  },
+  "CustomAuthorizerproduction20CC0718": {
+   "Type": "AWS::ApiGateway::Authorizer",
+   "Properties": {
+    "AuthorizerResultTtlInSeconds": 0,
+    "AuthorizerUri": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Fn::Select": [
+         1,
+         {
+          "Fn::Split": [
+           ":",
+           {
+            "Fn::GetAtt": [
+             "LambdaTokenAuthorizerproduction9CB0DDFE",
+             "Arn"
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       ":apigateway:",
+       {
+        "Fn::Select": [
+         3,
+         {
+          "Fn::Split": [
+           ":",
+           {
+            "Fn::GetAtt": [
+             "LambdaTokenAuthorizerproduction9CB0DDFE",
+             "Arn"
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       ":lambda:path/2015-03-31/functions/",
+       {
+        "Fn::GetAtt": [
+         "LambdaTokenAuthorizerproduction9CB0DDFE",
+         "Arn"
+        ]
+       },
+       "/invocations"
+      ]
+     ]
+    },
+    "IdentitySource": "method.request.header.Authorization",
+    "Name": "MainStackproductionApiGatewayStackproductionCustomAuthorizerproductionFC0668B5",
+    "RestApiId": {
+     "Ref": "RestApiproductionB9A4BADB"
+    },
+    "Type": "TOKEN"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/CustomAuthorizer-production/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/12PQU+EMBCFf8veS92Vg3pkNZ40EjBeN7NlhAq0pDMNQcJ/Ny2sWT29703TN29u5eHhTu53MFKiqjbp9FnOJYNqBYx0mgmVQ6YeDNTo5FxGLx4/zUqL6KA/VyDnF5jQfaAjbU14/+9zdL2m6J69UbyNL7wISk9AhEwyCyIolUevWuQjEAoYdA2MI0xyLpA4G3T4foWZUtYbFk84dHbq0cSaV65kqDFWj1AgWe8UxviL2TJXfkVubBVGG73bFk3mubFOf6OLW3/dIjT0ci5st6YEzW2n1RTPj7QsIh4XGmhT/1n75nnwvIh84saam1Qe9vJ+90VaJ84b1j3KYtUfkaSibLUBAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "MainStack-production/ApiGatewayStack-production/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Outputs": {
+  "RestApiproductionEndpoint3A1DCECD": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "RestApiproductionB9A4BADB"
+      },
+      ".execute-api.",
+      {
+       "Ref": "AWS::Region"
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "RestApiproductionDeploymentStageprodC391D743"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "RestApiEndpoint": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "RestApiproductionB9A4BADB"
+      },
+      ".execute-api.",
+      {
+       "Ref": "AWS::Region"
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "RestApiproductionDeploymentStageprodC391D743"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "ApiPasswordSecretName": {
+   "Value": {
+    "Fn::Join": [
+     "-",
+     [
+      {
+       "Fn::Select": [
+        0,
+        {
+         "Fn::Split": [
+          "-",
+          {
+           "Fn::Select": [
+            6,
+            {
+             "Fn::Split": [
+              ":",
+              {
+               "Ref": "ApiPasswordSecretproduction74C039E6"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "Fn::Select": [
+        1,
+        {
+         "Fn::Split": [
+          "-",
+          {
+           "Fn::Select": [
+            6,
+            {
+             "Fn::Split": [
+              ":",
+              {
+               "Ref": "ApiPasswordSecretproduction74C039E6"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "Fn::Select": [
+        2,
+        {
+         "Fn::Split": [
+          "-",
+          {
+           "Fn::Select": [
+            6,
+            {
+             "Fn::Split": [
+              ":",
+              {
+               "Ref": "ApiPasswordSecretproduction74C039E6"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "Fn::Select": [
+        3,
+        {
+         "Fn::Split": [
+          "-",
+          {
+           "Fn::Select": [
+            6,
+            {
+             "Fn::Split": [
+              ":",
+              {
+               "Ref": "ApiPasswordSecretproduction74C039E6"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    ]
+   }
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

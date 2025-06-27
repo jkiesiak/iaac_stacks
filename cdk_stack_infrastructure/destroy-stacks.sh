@@ -46,6 +46,9 @@ fi
 # Set default environment if not provided
 environment="${environment:-dev}"
 
+# Unique output directory per environment
+output_dir="cdk.out-$environment"
+
 # ---------- Step: Set AWS credentials ----------
 export AWS_PROFILE="$aws_profile"
 export AWS_DEFAULT_REGION="eu-west-1"
@@ -54,6 +57,10 @@ echo "Using AWS profile: $AWS_PROFILE"
 echo "Target environment: $environment"
 
 # ---------- Step: Destroy CDK stacks ----------
-cdk destroy --all --force --context env="$environment" --profile "$AWS_PROFILE"
+cdk destroy --all --force --context env="$environment" --profile "$AWS_PROFILE" --output "$output_dir"
 
 echo "---------- Done. CDK stacks destroyed. ----------"
+
+# Optional: clean up output dir after destroy
+# Uncomment if you want to remove output directory after
+# rm -rf "$output_dir"

@@ -24,7 +24,7 @@ class ApiGatewayStack(Stack):
         rds_secret_name: str,
         rds_endpoint_address: str,
         rds_secret_arn: str,
-        env: str = "dev",
+        env: str,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)

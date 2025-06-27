@@ -1,46 +1,18 @@
-from aws_cdk import App, Tags
-from stacks.step_functions_stack import LambdaRdsStack
-from stacks.network import VpcStack
-from stacks.rds_stack import RdsPostgresStack
-from stacks.api_gateway import ApiGatewayStack
+from aws_cdk import App
 
-region_aws = "eu-west-1"
+from stacks.main_stack import MainStack
 
 app = App()
 
-# Global tags
-common_tags = {"Environment": "dev", "Project": "my-stack", "Owner": "Joanna Kiesiak"}
+env = app.node.try_get_context("environment")
+region_aws = app.node.try_get_context("region_aws")
+is_dev_raw = app.node.try_get_context("is_development")
+is_dev = str(is_dev_raw).lower() == "true"
 
-for key, value in common_tags.items():
-    Tags.of(app).add(key, value)
 
-vpc_stack = VpcStack(app, "VpcStack")
-vpc = vpc_stack.vpc
-rds_security_group = vpc_stack.rds_security_group
+if not env:
+    raise Exception("Missing context variable: env. Use 'cdk deploy -c env=dev'")
 
-rds_postgres = RdsPostgresStack(
-    app, "RDSStack", vpc=vpc, rds_security_group=rds_security_group
-)
-rds_endpoint_address = rds_postgres.rds_endpoint_address
-rds_secret_name = rds_postgres.rds_password_secret
-rds_instance_id = rds_postgres.rds_instance_id
-secret_arn = rds_postgres.secret_arn
-
-LambdaRdsStack(
-    app,
-    "LambdaRdsStack",
-    rds_instance_id=rds_instance_id,
-    rds_endpoint_address=rds_endpoint_address,
-    rds_secret_name=rds_secret_name,
-    secret_arn=secret_arn,
-)
-
-ApiGatewayStack(
-    app,
-    "ApiGatewayStack",
-    rds_secret_name=rds_secret_name,
-    rds_endpoint_address=rds_endpoint_address,
-    rds_secret_arn=secret_arn,
-)
+MainStack(app, f"MainStack-{env}", env, is_dev)
 
 app.synth()

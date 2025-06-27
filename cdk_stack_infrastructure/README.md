@@ -10,7 +10,7 @@ Run cdk synth
 
 Run cdk deploy
 ```bash
-./deploy_cdk.sh -p user_infra -e dev
+./deploy_cdk.sh -p user_infra -e prod
 cdk destroy --all --require-approval never --context env="dev" --profile "user_infra"
 ```
 
@@ -18,6 +18,5 @@ cdk destroy --all --require-approval never --context env="dev" --profile "user_i
 
 Destroying stack:
 ```bash
-./destroy.sh -p my-profile -e dev
-./destroy.sh -p my-profile
+./destroy-stacks.sh -p user_infra -e prod
 ```
