@@ -16,9 +16,6 @@ venv/
 */.output/
 */*/.output/
 
-# Scripts (if these shouldn't be committed)
-run-terraform.sh
-delete-terraform.sh
 
 # Miscellaneous
 TODO.txt

@@ -3,9 +3,10 @@
 ## Table of Contents
 1. [General Overview](#general-overview)
 2. [Architecture](#architecture)
+    - [Diagram](#diagram)
     - [Resources Used](#resources-used)
     - [Core Functionalities](#core-functionalities)
-3. [Getting Started](#getting-started)
+4. [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Permissions for Script Execution](#permissions-for-script-execution)
     - [Deployment of Resources](#deployment-of-resources)
@@ -17,48 +18,65 @@
 
 
 ## General overview
-This repository provides a comprehensive implementation of various Infrastructure as Code (IaC) tools to provision and 
-manage infrastructure resources efficiently and effectively. The primary objective of this project is to gain hands-on 
-experience with IaC practices, enhance our understanding of cloud infrastructure provisioning, and streamline deployment 
-processes.
+Infrastructure as Code (IaC) is a practice for managing and provisioning cloud resources automatically through code, 
+enabling efficient, scalable, and repeatable deployments. This project aims to implement an IaC solution using various 
+technologies to deploy and manage cloud resources effectively. The primary objective is to gain hands-on experience with 
+different IaC tools, including Terraform and AWS CDK, and to compare their features, usability, and performance. 
+By implementing the same architecture across these technologies, the project evaluates their strengths, differences, 
+and suitability for managing cloud infrastructure.
 
 ## Architecture
+### Diagram
+The following diagram illustrates the architecture:
 ![Optional Image Alt Text](docs/architecture_v3.svg)
 
 ### Resources Used
-- **AWS Lambda**: Executes code for data processing and triggers actions based on events.
-- **Amazon RDS**: Stores structured data for applications.
-- **Amazon S3**: Serves as a backup destination for critical data.
-- **Amazon API Gateway**: Provides RESTful endpoints to access the system (`/order`, `/customer`).
-- **AWS Identity and Access Management (IAM)**: Manages secure access and permissions for resources.
-- **Amazon CloudWatch**: Monitors and logs system performance and activity.
+The architecture consists of a serverless, event-driven system deployed on AWS, utilizing the following resources:
+- **Amazon S3**: Two buckets are used—one event bucket for receiving JSON files and one backup bucket serving as 
+a destination for processed data.
+- **AWS Lambda:**: Executes code for processing JSON data and performing database operations, triggered by events from 
+the S3 bucket or Step Functions.
+- **Amazon API Gateway**: Provides RESTful endpoints to access the system (`/customers`, `/orders`, `/orders/{id}`, 
+`/customers/{id}`) for querying and modifying data.
+- **AWS Step Functions**: Orchestrates the workflow for processing JSON files, coordinating Lambda functions and data movement.
+- **Amazon RDS**: Stores structured data in a managed relational database for the application.
+- **AWS Identity and Access Management (IAM)**: Manages secure access and permissions for Lambda functions etc
 
 ### Core Functionalities
 
-This project implements a variety of functionalities to ensure efficient and automated processing of data. 
-Below are the core functionalities:
+The system is event-driven, with key functionalities implemented as follows:
 
-1. **Database Schema Setup**:
-   - The database schema is initialized using `psql` commands with a predefined schema structure.
+1. Database Schema Configuration:
+   - Terraform: Configures the RDS database schema using direct `psql` PostgreSQL commands, executing external sql script 
+defining two tables with primary and foreign keys and creating a user with admin privileges.
+   - AWS CDK: Uses an additional Lambda function to execute an external SQL script, setting up the same database schema 
+with two tables and an admin user.
+   - JSON: The Json is generated based on the CDK code, hence the architecture is the same and the functionalities. 
 
-2. **Data Preprocessing with AWS Lambda**:
-   - AWS Lambda functions preprocess incoming data before insertion into the database.
-   - Includes validation, transformation, and error detection steps to ensure data integrity.
-   - All inserted files are stored in the directory "backup".
+2. **Event-Driven Processing**: 
+When a JSON file is uploaded to the event S3 bucket, it triggers an AWS Step Function. The Step Function orchestrates 
+   a Lambda function that processes the JSON data and inserts it into the RDS database. After processing, the file is 
+   moved to the backup S3 bucket for storage.
 
 3. **Error Handling and File Management**:
-     If data insertion into the database fails, the file is explicitly moved to an "unprocessed" directory, ensuring the issue is logged for further investigation.
+If data insertion into the database fails, the file is explicitly moved to an "unprocessed" directory, ensuring 
+the issue is logged for further investigation.
 
-4. **Streamlined File Movement Logic**:
-   - To reduce redundancy, the file movement process is now streamlined:
-     - A single function handles moving files to the correct directory after detecting an error or exception.
-     - This ensures clean and efficient code while maintaining detailed logging for debugging purposes.
-   - The improved logic simplifies future adjustments by centralizing the handling of failed files, avoiding repetitive code.
+4. **API Gateway Endpoints**:
+The API Gateway exposes four endpoints to interact with the RDS database:
+
+GET `/customers`: Retrieves customer data.
+
+GET `/orders`: Retrieves order data.
+
+PUT `/orders/{id}`: Updates specific order data by ID.
+
+PUT `/customers/{id}`: Updates specific customer data by ID.
 
 5. **Robust Logging**:
-   - Detailed logs capture all operations, providing developers with insights into system behavior and error causes.
+Detailed logs capture all operations, providing developers with insights into system behavior and error causes.
 
-
+   
 
 ## Getting started
 To ensure a consistent, automated, and repeatable deployment of the infrastructure, two scripts are available:
