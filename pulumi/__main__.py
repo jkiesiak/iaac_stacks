@@ -1,4 +1,6 @@
-from stacks.vpc import create_vpc
+from components.network import VpcStack
 
-# Run the VPC logic
-create_vpc()
+vpc_stack = VpcStack(
+    name="vpc-stack",
+    env="dev",
+)
