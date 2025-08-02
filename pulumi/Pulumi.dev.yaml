@@ -1,0 +1,5 @@
+config:
+  my-modern-infra:env: dev
+  my-modern-infra:is_development: "true"
+  aws:profile: user_infra
+encryptionsalt: v1:UVN7f4YBEvo=:v1:9mNZHjAt5zQyHsht:rDX5plc0VPgdcRq8w6Tr4cS7tUZCTQ==
