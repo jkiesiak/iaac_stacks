@@ -214,11 +214,6 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=self),
         )
 
-        # aws.iam.RolePolicyAttachment(
-        #     get_resource_name("step-fn-invoke", env),
-        #     role=step_role.name,
-        #     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-        # )
         policy_definition = pulumi.Output.all(lambda_insert.arn, lambda_backup.arn).apply(
             lambda arns: json.dumps({
                 "Version": "2012-10-17",
@@ -255,24 +250,36 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=step_role),
         )
 
-        step_definition_v2 = {
+        step_definition = pulumi.Output.all(
+            lambda_insert.arn,
+            lambda_backup.arn
+        ).apply(lambda arns: json.dumps({
+            "Comment": "State machine definition",
             "StartAt": "InsertIntoRDS",
             "States": {
                 "InsertIntoRDS": {
                     "Type": "Task",
-                    "Resource": lambda_insert.arn,
-                    "Retry": [{"ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 3}],
+                    "Resource": arns[0],
                     "Next": "StoreBackup"
                 },
                 "StoreBackup": {
                     "Type": "Task",
-                    "Resource": lambda_backup.arn,
-                    "Retry": [{"ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 3}],
-                    "Catch": [{
-                        "ErrorEquals": ["States.ALL"],
-                        "Next": "BackupFail",
-                        "ResultPath": "$.error"
-                    }],
+                    "Resource": arns[1],
+                    "Retry": [
+                        {
+                            "ErrorEquals": ["States.ALL"],
+                            "IntervalSeconds": 2,
+                            "MaxAttempts": 3,
+                            "BackoffRate": 2.0
+                        }
+                    ],
+                    "Catch": [
+                        {
+                            "ErrorEquals": ["States.ALL"],
+                            "Next": "BackupFail",
+                            "ResultPath": "$.error"
+                        }
+                    ],
                     "End": True
                 },
                 "BackupFail": {
@@ -281,25 +288,6 @@ class StepFunctionsStack(pulumi.ComponentResource):
                     "Cause": "Failed to backup file."
                 }
             }
-        }
-        step_definition = pulumi.Output.all(
-            lambda_insert.arn,
-            lambda_backup.arn,
-        ).apply(lambda arns: json.dumps({
-            "Comment": "State machine definition",
-            "StartAt": "InsertIntoRDS",
-            "States": {
-                "InsertIntoRDS": {
-                    "Type": "Task",
-                    "Resource": arns[0],
-                    "Next": "StoreBackup",
-                },
-                "StoreBackup": {
-                    "Type": "Task",
-                    "Resource": arns[1],
-                    "End": True,
-                },
-            },
         }))
 
         state_machine = aws.sfn.StateMachine(
