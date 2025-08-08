@@ -1,10 +1,12 @@
 import pulumi
 import pulumi_aws as aws
 import pulumi_random
+import pulumi_command as command
 import json
 import random
+import datetime
 
-from naming_utils import get_resource_name, generate_password
+from naming_utils import get_resource_name, generate_password, apply_schema
 from .tags import get_common_tags
 
 
@@ -85,9 +87,25 @@ class RdsStack(pulumi.ComponentResource):
             deletion_protection=not is_development,
             copy_tags_to_snapshot=True,
             iam_database_authentication_enabled=True,
+            storage_encrypted=True,
             tags={**tags, "Name": get_resource_name("rds-instance", env)},
             opts=pulumi.ResourceOptions(parent=self),
         )
+        # Trigger logic: setup schema in database
+        initialize_db = command.local.Command(
+            "apply_db_schema",
+            create=pulumi.Output.all(
+                db_instance.address,
+                password.result
+            ).apply(lambda args:
+                    f"psql --echo-queries -h {args[0]} -U postgres -f sql_schema/schema.sql"
+                    ),
+            environment=pulumi.Output.all(password.result).apply(lambda args: {"PGPASSWORD": args[0]}),
+            opts=pulumi.ResourceOptions(depends_on=[db_instance])  # Ensures DB exists and is ready
+        )
+        always_run_trigger = str(datetime.datetime.utcnow())
+
+        # pulumi.Output.all(db_instance.address, password.result, always_run_trigger).apply(apply_schema)
 
         self.rds_instance_id = db_instance.id
         self.rds_endpoint = db_instance.address
