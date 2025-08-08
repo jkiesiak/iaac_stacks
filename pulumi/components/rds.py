@@ -91,8 +91,9 @@ class RdsStack(pulumi.ComponentResource):
             tags={**tags, "Name": get_resource_name("rds-instance", env)},
             opts=pulumi.ResourceOptions(parent=self),
         )
+
         # Trigger logic: setup schema in database
-        initialize_db = command.local.Command(
+        command.local.Command(
             "apply_db_schema",
             create=pulumi.Output.all(
                 db_instance.address,
@@ -103,9 +104,6 @@ class RdsStack(pulumi.ComponentResource):
             environment=pulumi.Output.all(password.result).apply(lambda args: {"PGPASSWORD": args[0]}),
             opts=pulumi.ResourceOptions(depends_on=[db_instance])  # Ensures DB exists and is ready
         )
-        always_run_trigger = str(datetime.datetime.utcnow())
-
-        # pulumi.Output.all(db_instance.address, password.result, always_run_trigger).apply(apply_schema)
 
         self.rds_instance_id = db_instance.id
         self.rds_endpoint = db_instance.address

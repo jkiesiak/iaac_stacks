@@ -1,8 +1,9 @@
+from typing import Optional
+
 import pulumi
 import pulumi_aws as aws
-from typing import Optional, List
-
 from naming_utils import get_resource_name
+
 from .tags import get_common_tags
 
 
