@@ -6,6 +6,8 @@ import pg8000
 from decimal import Decimal
 import datetime
 
+_cached_token = None
+
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME")
 RDS_SECRET_NAME = os.getenv("RDS_SECRET_NAME")
@@ -162,20 +164,18 @@ def get_order_data(order_id):
     logger.info(f"Order: converted data: {converted_dict}")
     return converted_dict
 
-
 def validate_token(token):
-    """Validates the token using AWS Secrets Manager."""
-    logger.info(f"Validating a tokem in the progress")
+    global _cached_token
     if not token or not isinstance(token, str):
         return False
 
     try:
-        stored_password = get_db_credentials(SECRET_NAME)["password"]
-        return token == stored_password
+        if _cached_token is None:
+            _cached_token = get_db_credentials(SECRET_NAME)["password"]
+        return token == _cached_token
     except Exception as e:
         logger.error(f"Error validating token: {e}")
         return False
-
 
 def lambda_handler(event, context):
     try:
@@ -196,13 +196,14 @@ def lambda_handler(event, context):
                     return {"statusCode": 200, "body": json.dumps(customer_data)}
                 return {"statusCode": 404, "body": json.dumps({"error": "Customer not found"})}
 
-            if "order_id" in params:
+            elif "order_id" in params:
                 order_data = get_order_data(params["order_id"])
                 if order_data:
                     return {"statusCode": 200, "body": json.dumps(order_data)}
                 return {"statusCode": 404, "body": json.dumps({"error": "Order not found"})}
 
-            return {"statusCode": 400, "body": json.dumps({"error": "Missing query parameters"})}
+            else:
+                return {"statusCode": 400, "body": json.dumps({"error": "Missing query parameters"})}
 
 
         elif http_method == "PUT":

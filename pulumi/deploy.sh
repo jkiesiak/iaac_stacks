@@ -27,6 +27,7 @@ pulumi config set aws:profile "$PROFILE" --stack "$STACK_NAME"
 
 # Select or create stack
 pulumi stack select "$STACK_NAME" || pulumi stack init "$STACK_NAME"
+pulumi refresh --yes
 
 # Deploy resources
 pulumi up --yes --logtostderr --verbose=9

@@ -6,7 +6,7 @@ import json
 import random
 import datetime
 
-from naming_utils import get_resource_name, generate_password, apply_schema
+from naming_utils import get_resource_name, generate_password
 from .tags import get_common_tags
 
 

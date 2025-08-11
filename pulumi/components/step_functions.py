@@ -100,7 +100,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
         # ------------------------------
         # Lambda Layers (pre-uploaded zip files)
         # ------------------------------
-        pg8000_layer = aws.lambda_.LayerVersion(
+        self.pg8000_layer = aws.lambda_.LayerVersion(
             get_resource_name("pg8000-layer", env),
             layer_name="python_pg8000_layer",
             compatible_runtimes=["python3.9"],
@@ -108,7 +108,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=self),
         )
 
-        logging_layer = aws.lambda_.LayerVersion(
+        self.logging_layer = aws.lambda_.LayerVersion(
             get_resource_name("logging-layer", env),
             layer_name="python_logging_layer",
             compatible_runtimes=["python3.9"],
@@ -126,7 +126,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             role=lambda_role.arn,
             timeout=300,
             memory_size=256,
-            layers=[pg8000_layer.arn, logging_layer.arn],
+            layers=[self.pg8000_layer.arn, self.logging_layer.arn],
             code=pulumi.AssetArchive({
                 ".": pulumi.FileArchive("./lambda_insert_data_into_rds")
             }),
@@ -184,7 +184,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             role=lambda_backup_role.arn,
             timeout=300,
             memory_size=256,
-            layers=[logging_layer.arn],
+            layers=[self.logging_layer.arn],
             code=pulumi.AssetArchive({
                 ".": pulumi.FileArchive("./lambda_store_backup")
             }),
@@ -357,4 +357,6 @@ class StepFunctionsStack(pulumi.ComponentResource):
             "s3_event_data_bucket": s3_event_data.id,
             "s3_backup_data_bucket": s3_backup_data.id,
             "step_function_arn": state_machine.arn,
+            "pg8000_layer_arn": self.pg8000_layer.arn,
+            "logging_layer_arn": self.logging_layer.arn,
         })
