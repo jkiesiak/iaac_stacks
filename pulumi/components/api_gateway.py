@@ -3,6 +3,7 @@ import random
 import string
 from typing import Dict
 from pulumi_random import RandomPassword
+from pulumi_aws.apigateway import RestApiEndpointConfigurationArgs
 
 import pulumi
 import pulumi_aws as aws
@@ -59,9 +60,7 @@ class ApiGatewayStack(pulumi.ComponentResource):
         rest_api = aws.apigateway.RestApi(
             resource_name=get_resource_name("Rest-Api", env),
             name=get_resource_name("Rest-Api", env),
-            endpoint_configuration=aws.apigateway.RestApiEndpointConfigurationArgs(
-                types=["REGIONAL"]
-            ),
+            endpoint_configuration={"types": "REGIONAL"},
             opts=pulumi.ResourceOptions(parent=self),
         )
 
