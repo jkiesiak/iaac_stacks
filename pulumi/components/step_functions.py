@@ -12,7 +12,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
         self,
         name: str,
         env: str,
-        rds_instance_id: str,
+        rds_instance_arn: str,
         rds_endpoint_address: str,
         rds_secret_name: str,
         rds_secret_arn: str,
@@ -20,6 +20,9 @@ class StepFunctionsStack(pulumi.ComponentResource):
     ):
         super().__init__("custom:StepFunctionsStack", name, None, opts)
         tags = get_common_tags(env)
+
+        account_id = aws.get_caller_identity().account_id
+        region = aws.config.region
 
         # ------------------------------
         # S3 Buckets
@@ -60,14 +63,18 @@ class StepFunctionsStack(pulumi.ComponentResource):
         # ------------------------------
         lambda_role = aws.iam.Role(
             get_resource_name("lambda-insert-role", env),
-            assume_role_policy=json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Action": "sts:AssumeRole",
-                    "Principal": {"Service": "lambda.amazonaws.com"},
-                    "Effect": "Allow",
-                }]
-            }),
+            assume_role_policy=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Principal": {"Service": "lambda.amazonaws.com"},
+                            "Effect": "Allow",
+                        }
+                    ],
+                }
+            ),
             opts=ResourceOptions(parent=self),
         )
 
@@ -75,25 +82,50 @@ class StepFunctionsStack(pulumi.ComponentResource):
             get_resource_name("lambda-insert-policy", env),
             role=lambda_role.id,
             policy=pulumi.Output.all(
-                s3_event_data.arn, s3_event_data.arn.apply(lambda arn: f"{arn}/*")
-            ).apply(lambda arns: json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [
+                s3_event_data.bucket, rds_instance_arn, rds_secret_arn
+            ).apply(
+                lambda arn: json.dumps(
                     {
-                        "Effect": "Allow",
-                        "Action": [
-                            "logs:*",
-                            "rds-data:*",
-                            "rds-db:connect",
-                            "secretsmanager:GetSecretValue",
-                            "secretsmanager:DescribeSecret",
-                            "s3:GetObject",
-                            "s3:ListBucket"
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Action": [
+                                    "logs:CreateLogGroup",
+                                    "logs:CreateLogStream",
+                                    "logs:PutLogEvents",
+                                ],
+                                "Resource": "*",
+                                "Effect": "Allow",
+                            },
+                            {
+                                "Action": ["s3:GetObject", "s3:ListBucket"],
+                                "Resource": [
+                                    f"arn:aws:s3:::{arn[0]}",
+                                    f"arn:aws:s3:::{arn[0]}/*",
+                                ],
+                                "Effect": "Allow",
+                            },
+                            {
+                                "Action": [
+                                    "rds-data:ExecuteStatement",
+                                    "rds-data:BatchExecuteStatement",
+                                    "rds-db:connect",
+                                ],
+                                "Resource": f"{arn[1]}",
+                                "Effect": "Allow",
+                            },
+                            {
+                                "Action": [
+                                    "secretsmanager:GetSecretValue",
+                                    "secretsmanager:DescribeSecret",
+                                ],
+                                "Resource": f"{arn[2]}",
+                                "Effect": "Allow",
+                            },
                         ],
-                        "Resource": ["*"]
                     }
-                ]
-            })),
+                )
+            ),
             opts=ResourceOptions(parent=lambda_role),
         )
 
@@ -121,26 +153,30 @@ class StepFunctionsStack(pulumi.ComponentResource):
         # ------------------------------
         lambda_insert = aws.lambda_.Function(
             resource_name=get_resource_name("lambda_insert_data_into_rds", env),
+            name=f"lambda_insert_data_into_rds-{env}",
             runtime="python3.9",
             handler="lambda_handler.lambda_handler",
             role=lambda_role.arn,
             timeout=300,
             memory_size=256,
             layers=[self.pg8000_layer.arn, self.logging_layer.arn],
-            code=pulumi.AssetArchive({
-                ".": pulumi.FileArchive("./lambda_insert_data_into_rds")
-            }),
+            code=pulumi.AssetArchive(
+                {".": pulumi.FileArchive("./lambda_insert_data_into_rds")}
+            ),
             environment={
                 "variables": {
                     "S3_BACKUP_DATA": s3_backup_data.bucket,
                     "S3_EVENT_DATA": s3_event_data.bucket,
                     "RDS_HOST": rds_endpoint_address,
                     "SSM_NAME": rds_secret_name,
-                    "RDS_DB": "database_rds"
+                    "RDS_DB": "database_rds",
                 }
             },
             opts=ResourceOptions(parent=self),
-            tags={**tags, "Name": get_resource_name("lambda_insert_data_into_rds", env)},
+            tags={
+                **tags,
+                "Name": get_resource_name("lambda_insert_data_into_rds", env),
+            },
         )
 
         # ------------------------------
@@ -148,50 +184,75 @@ class StepFunctionsStack(pulumi.ComponentResource):
         # ------------------------------
         lambda_backup_role = aws.iam.Role(
             get_resource_name("lambda-backup-role", env),
-            assume_role_policy=json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Action": "sts:AssumeRole",
-                    "Principal": {"Service": "lambda.amazonaws.com"},
-                    "Effect": "Allow"
-                }]
-            }),
+            assume_role_policy=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Principal": {"Service": "lambda.amazonaws.com"},
+                            "Effect": "Allow",
+                        }
+                    ],
+                }
+            ),
             opts=ResourceOptions(parent=self),
         )
 
         aws.iam.RolePolicy(
             get_resource_name("lambda-backup-policy", env),
             role=lambda_backup_role.id,
-            policy=pulumi.Output.all(
-                s3_event_data.arn, s3_backup_data.arn
-            ).apply(lambda arns: json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [
+            policy=pulumi.Output.all(s3_event_data.arn, s3_backup_data.arn).apply(
+                lambda arn: json.dumps(
                     {
-                        "Effect": "Allow",
-                        "Action": ["logs:*", "s3:*"],
-                        "Resource": ["*"]
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Action": [
+                                    "logs:CreateLogGroup",
+                                    "logs:CreateLogStream",
+                                    "logs:PutLogEvents",
+                                ],
+                                "Resource": "*",
+                                "Effect": "Allow",
+                            },
+                            {
+                                "Action": [
+                                    "s3:GetObject",
+                                    "s3:ListBucket",
+                                    "s3:DeleteObject",
+                                ],
+                                "Resource": [f"{arn[0]}", f"{arn[0]}/*"],
+                                "Effect": "Allow",
+                            },
+                            {
+                                "Action": ["s3:PutObject", "s3:PutObjectAcl"],
+                                "Resource": f"{arn[1]}/*",
+                                "Effect": "Allow",
+                            },
+                        ],
                     }
-                ]
-            })),
+                )
+            ),
             opts=ResourceOptions(parent=lambda_backup_role),
         )
 
         lambda_backup = aws.lambda_.Function(
             resource_name=get_resource_name("lambda_store_backup", env),
+            name=f"lambda_store_backup-{env}",
             runtime="python3.9",
             handler="lambda_handler.lambda_handler",
             role=lambda_backup_role.arn,
             timeout=300,
             memory_size=256,
             layers=[self.logging_layer.arn],
-            code=pulumi.AssetArchive({
-                ".": pulumi.FileArchive("./lambda_store_backup")
-            }),
+            code=pulumi.AssetArchive(
+                {".": pulumi.FileArchive("./lambda_store_backup")}
+            ),
             environment={
                 "variables": {
                     "S3_BACKUP_DATA": s3_backup_data.bucket,
-                    "S3_EVENT_DATA": s3_event_data.bucket
+                    "S3_EVENT_DATA": s3_event_data.bucket,
                 }
             },
             opts=ResourceOptions(parent=self),
@@ -203,44 +264,49 @@ class StepFunctionsStack(pulumi.ComponentResource):
         # ------------------------------
         step_role = aws.iam.Role(
             get_resource_name("step-fn-role", env),
-            assume_role_policy=json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Action": "sts:AssumeRole",
-                    "Principal": {"Service": "states.amazonaws.com"},
-                    "Effect": "Allow"
-                }]
-            }),
+            assume_role_policy=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Principal": {"Service": "states.amazonaws.com"},
+                            "Effect": "Allow",
+                        }
+                    ],
+                }
+            ),
             opts=ResourceOptions(parent=self),
         )
 
-        policy_definition = pulumi.Output.all(lambda_insert.arn, lambda_backup.arn).apply(
-            lambda arns: json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "lambda:InvokeFunction",
-                        "Resource": "*",
-                        "Effect": "Allow"
-                    },
-                    {
-                        "Action": "lambda:InvokeFunction",
-                        "Resource": [
-                            arns[0],
-                            f"{arns[0]}:*"
-                        ],
-                        "Effect": "Allow"
-                    },
-                    {
-                        "Action": "lambda:InvokeFunction",
-                        "Resource": [
-                            arns[1],
-                            f"{arns[1]}:*",
-                        ],
-                        "Effect": "Allow"
-                    }
-                ]
-            })
+        policy_definition = pulumi.Output.all(
+            lambda_insert.arn, lambda_backup.arn
+        ).apply(
+            lambda arns: json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": "lambda:InvokeFunction",
+                            "Resource": "*",
+                            "Effect": "Allow",
+                        },
+                        {
+                            "Action": "lambda:InvokeFunction",
+                            "Resource": [arns[0], f"{arns[0]}:*"],
+                            "Effect": "Allow",
+                        },
+                        {
+                            "Action": "lambda:InvokeFunction",
+                            "Resource": [
+                                arns[1],
+                                f"{arns[1]}:*",
+                            ],
+                            "Effect": "Allow",
+                        },
+                    ],
+                }
+            )
         )
 
         aws.iam.RolePolicy(
@@ -250,45 +316,46 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=step_role),
         )
 
-        step_definition = pulumi.Output.all(
-            lambda_insert.arn,
-            lambda_backup.arn
-        ).apply(lambda arns: json.dumps({
-            "Comment": "State machine definition",
-            "StartAt": "InsertIntoRDS",
-            "States": {
-                "InsertIntoRDS": {
-                    "Type": "Task",
-                    "Resource": arns[0],
-                    "Next": "StoreBackup"
-                },
-                "StoreBackup": {
-                    "Type": "Task",
-                    "Resource": arns[1],
-                    "Retry": [
-                        {
-                            "ErrorEquals": ["States.ALL"],
-                            "IntervalSeconds": 2,
-                            "MaxAttempts": 3,
-                            "BackoffRate": 2.0
-                        }
-                    ],
-                    "Catch": [
-                        {
-                            "ErrorEquals": ["States.ALL"],
-                            "Next": "BackupFail",
-                            "ResultPath": "$.error"
-                        }
-                    ],
-                    "End": True
-                },
-                "BackupFail": {
-                    "Type": "Fail",
-                    "Error": "BackupFailed",
-                    "Cause": "Failed to backup file."
+        step_definition = pulumi.Output.all(lambda_insert.arn, lambda_backup.arn).apply(
+            lambda arns: json.dumps(
+                {
+                    "Comment": "State machine definition",
+                    "StartAt": "InsertIntoRDS",
+                    "States": {
+                        "InsertIntoRDS": {
+                            "Type": "Task",
+                            "Resource": arns[0],
+                            "Next": "StoreBackup",
+                        },
+                        "StoreBackup": {
+                            "Type": "Task",
+                            "Resource": arns[1],
+                            "Retry": [
+                                {
+                                    "ErrorEquals": ["States.ALL"],
+                                    "IntervalSeconds": 2,
+                                    "MaxAttempts": 3,
+                                    "BackoffRate": 2.0,
+                                }
+                            ],
+                            "Catch": [
+                                {
+                                    "ErrorEquals": ["States.ALL"],
+                                    "Next": "BackupFail",
+                                    "ResultPath": "$.error",
+                                }
+                            ],
+                            "End": True,
+                        },
+                        "BackupFail": {
+                            "Type": "Fail",
+                            "Error": "BackupFailed",
+                            "Cause": "Failed to backup file.",
+                        },
+                    },
                 }
-            }
-        }))
+            )
+        )
 
         state_machine = aws.sfn.StateMachine(
             get_resource_name("step-fn", env),
@@ -304,24 +371,34 @@ class StepFunctionsStack(pulumi.ComponentResource):
         # ------------------------------
         eventbridge_role = aws.iam.Role(
             get_resource_name("eventbridge-role", env),
-            assume_role_policy=json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Action": "sts:AssumeRole",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Effect": "Allow"
-                }]
-            }),
+            assume_role_policy=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Principal": {"Service": "events.amazonaws.com"},
+                            "Effect": "Allow",
+                        }
+                    ],
+                }
+            ),
             opts=ResourceOptions(parent=self),
         )
-        policy = state_machine.arn.apply(lambda arn: json.dumps({
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Action": ["states:StartExecution"],
-                "Resource": arn,
-            }]
-        }))
+        policy = state_machine.arn.apply(
+            lambda arn: json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": ["states:StartExecution"],
+                            "Resource": arn,
+                        }
+                    ],
+                }
+            )
+        )
 
         aws.iam.RolePolicy(
             get_resource_name("eventbridge-policy", env),
@@ -330,13 +407,15 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=eventbridge_role),
         )
 
-        event_pattern = s3_event_data.bucket.apply(lambda bucket_name: json.dumps({
-            "source": ["aws.s3"],
-            "detail-type": ["Object Created"],
-            "detail": {
-                "bucket": {"name": [bucket_name]}
-            }
-        }))
+        event_pattern = s3_event_data.bucket.apply(
+            lambda bucket_name: json.dumps(
+                {
+                    "source": ["aws.s3"],
+                    "detail-type": ["Object Created"],
+                    "detail": {"bucket": {"name": [bucket_name]}},
+                }
+            )
+        )
 
         event_rule = aws.cloudwatch.EventRule(
             resource_name=get_resource_name("s3-put-event-rule", env),
@@ -353,10 +432,12 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=event_rule),
         )
 
-        self.register_outputs({
-            "s3_event_data_bucket": s3_event_data.id,
-            "s3_backup_data_bucket": s3_backup_data.id,
-            "step_function_arn": state_machine.arn,
-            "pg8000_layer_arn": self.pg8000_layer.arn,
-            "logging_layer_arn": self.logging_layer.arn,
-        })
+        self.register_outputs(
+            {
+                "s3_event_data_bucket": s3_event_data.id,
+                "s3_backup_data_bucket": s3_backup_data.id,
+                "step_function_arn": state_machine.arn,
+                "pg8000_layer_arn": self.pg8000_layer.arn,
+                "logging_layer_arn": self.logging_layer.arn,
+            }
+        )

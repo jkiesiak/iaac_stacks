@@ -1,5 +1,5 @@
 config:
-  my-infra:env: dev
+  my-infra:env: dev1
   my-infra:is_development: "true"
   aws:profile: user_infra
-encryptionsalt: v1:UVN7f4YBEvo=:v1:9mNZHjAt5zQyHsht:rDX5plc0VPgdcRq8w6Tr4cS7tUZCTQ==
+encryptionsalt: v1:iwWe2fLtrm0=:v1:vood6oAOnz22fc5H:C9JZY0L9ZMrDcB7oLMuDw3w4FFQswg==

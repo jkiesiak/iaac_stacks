@@ -3,4 +3,3 @@ runtime: python
 description: my stack written in pulumi
 config:
   aws:region: eu-west-1
-

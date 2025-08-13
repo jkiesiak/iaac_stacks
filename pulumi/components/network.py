@@ -78,7 +78,10 @@ class VpcStack(pulumi.ComponentResource):
                 cidr_block=f"10.0.{i + 11}.0/24",
                 availability_zone=az,
                 map_public_ip_on_launch=False,
-                tags={**tags, "Name": get_resource_name(f"private-subnet-{i + 1}", env)},
+                tags={
+                    **tags,
+                    "Name": get_resource_name(f"private-subnet-{i + 1}", env),
+                },
                 opts=pulumi.ResourceOptions(parent=self),
             )
             self.private_subnets.append(subnet)
@@ -150,7 +153,7 @@ class VpcStack(pulumi.ComponentResource):
                     to_port=5432,
                     ipv6_cidr_blocks=["::/0"],
                     description="Allow PostgreSQL access from any IP",
-                )
+                ),
             ],
             egress=[
                 aws.ec2.SecurityGroupEgressArgs(
@@ -182,8 +185,10 @@ class VpcStack(pulumi.ComponentResource):
             opts=pulumi.ResourceOptions(parent=self),
         )
 
-        self.register_outputs({
-            "vpc_id": self.vpc.id,
-            "rds_security_group_id": self.rds_security_group.id,
-            "db_subnet_group": self.db_subnet_group.name,
-        })
+        self.register_outputs(
+            {
+                "vpc_id": self.vpc.id,
+                "rds_security_group_id": self.rds_security_group.id,
+                "db_subnet_group": self.db_subnet_group.name,
+            }
+        )

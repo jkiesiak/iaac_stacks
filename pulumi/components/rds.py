@@ -1,12 +1,11 @@
+import json
+
 import pulumi
 import pulumi_aws as aws
-import pulumi_random
 import pulumi_command as command
-import json
-import random
-import datetime
+from naming_utils import get_resource_name
+from pulumi_random import RandomPassword
 
-from naming_utils import get_resource_name, generate_password
 from .tags import get_common_tags
 
 
@@ -25,32 +24,32 @@ class RdsStack(pulumi.ComponentResource):
 
         tags = get_common_tags(env)
 
-        nr = random.randint(0, 10)
-
         # Random password for PostgreSQL user
-        password = pulumi_random.RandomPassword(
-            resource_name=get_resource_name(f"rds-password-{nr}", env),
+        rds_password = RandomPassword(
+            resource_name=get_resource_name(f"rds-password-access", env),
             length=16,
-            special=True,
+            override_special="_%@",
             opts=pulumi.ResourceOptions(parent=self),
         )
 
-        # Secret to store DB credentials
         rds_secret = aws.secretsmanager.Secret(
-            resource_name=get_resource_name(f"rds-secret-access-{nr}", env),
+            resource_name=get_resource_name(f"rds-secret-access", env),
+            name=f"rds-secret-access-{env}",
             description="Credentials for PostgreSQL RDS",
             tags=tags,
             opts=pulumi.ResourceOptions(parent=self),
         )
 
         secret_version = aws.secretsmanager.SecretVersion(
-            resource_name=get_resource_name(f"rds-secret-version-{nr}", env),
+            resource_name=get_resource_name(f"rds-secret-version", env),
             secret_id=rds_secret.id,
-            secret_string=password.result.apply(
-                lambda pwd: json.dumps({
-                    "username": "postgres",
-                    "password": pwd,
-                })
+            secret_string=rds_password.result.apply(
+                lambda pwd: json.dumps(
+                    {
+                        "username": "postgres",
+                        "password": pwd,
+                    }
+                )
             ),
             opts=pulumi.ResourceOptions(parent=rds_secret),
         )
@@ -71,7 +70,7 @@ class RdsStack(pulumi.ComponentResource):
             engine="postgres",
             engine_version="16.6",
             username="postgres",
-            password=password.result,
+            password=rds_password.result,
             allocated_storage=50,
             storage_type="gp2",
             db_subnet_group_name=db_subnet_group.name,
@@ -95,25 +94,27 @@ class RdsStack(pulumi.ComponentResource):
         # Trigger logic: setup schema in database
         command.local.Command(
             "apply_db_schema",
-            create=pulumi.Output.all(
-                db_instance.address,
-                password.result
-            ).apply(lambda args:
-                    f"psql --echo-queries -h {args[0]} -U postgres -f sql_schema/schema.sql"
-                    ),
-            environment=pulumi.Output.all(password.result).apply(lambda args: {"PGPASSWORD": args[0]}),
-            opts=pulumi.ResourceOptions(depends_on=[db_instance])  # Ensures DB exists and is ready
+            create=pulumi.Output.all(db_instance.address, rds_password.result).apply(
+                lambda args: f"psql --echo-queries -h {args[0]} -U postgres -f sql_schema/schema.sql"
+            ),
+            environment=pulumi.Output.all(rds_password.result).apply(
+                lambda args: {"PGPASSWORD": args[0]}
+            ),
+            opts=pulumi.ResourceOptions(
+                depends_on=[db_instance]
+            ),  # Ensures DB exists and is ready
         )
 
-        self.rds_instance_id = db_instance.id
+        self.rds_instance_arn = db_instance.arn
         self.rds_endpoint = db_instance.address
         self.rds_secret_name = rds_secret.name
         self.secret_arn = rds_secret.arn
 
-        self.register_outputs({
-            "rds_instance_id": self.rds_instance_id,
-            "rds_endpoint": self.rds_endpoint,
-            "rds_secret_name": self.rds_secret_name,
-            "secret_arn": self.secret_arn,
-        })
-
+        self.register_outputs(
+            {
+                "rds_instance_arn": self.rds_instance_arn,
+                "rds_endpoint": self.rds_endpoint,
+                "rds_secret_name": self.rds_secret_name,
+                "secret_arn": self.secret_arn,
+            }
+        )
