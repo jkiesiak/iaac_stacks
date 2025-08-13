@@ -21,12 +21,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
         super().__init__("custom:StepFunctionsStack", name, None, opts)
         tags = get_common_tags(env)
 
-        account_id = aws.get_caller_identity().account_id
-        region = aws.config.region
-
-        # ------------------------------
         # S3 Buckets
-        # ------------------------------
         s3_event_data = aws.s3.Bucket(
             get_resource_name("s3-event-data", env),
             bucket=get_resource_name("s3-event-data", env),
@@ -58,9 +53,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=s3_backup_data),
         )
 
-        # ------------------------------
-        # Lambda Role for Insert Data
-        # ------------------------------
+        # Lambda role for inserting data into rds
         lambda_role = aws.iam.Role(
             get_resource_name("lambda-insert-role", env),
             assume_role_policy=json.dumps(
@@ -148,9 +141,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             opts=ResourceOptions(parent=self),
         )
 
-        # ------------------------------
         # Lambda Function to Insert into RDS
-        # ------------------------------
         lambda_insert = aws.lambda_.Function(
             resource_name=get_resource_name("lambda_insert_data_into_rds", env),
             name=f"lambda_insert_data_into_rds-{env}",
@@ -179,9 +170,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             },
         )
 
-        # ------------------------------
-        # Lambda for Backup
-        # ------------------------------
+        # Lambda for creating backup
         lambda_backup_role = aws.iam.Role(
             get_resource_name("lambda-backup-role", env),
             assume_role_policy=json.dumps(
@@ -259,9 +248,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             tags={**tags, "Name": get_resource_name("lambda_store_backup", env)},
         )
 
-        # ------------------------------
         # Step Function & Role
-        # ------------------------------
         step_role = aws.iam.Role(
             get_resource_name("step-fn-role", env),
             assume_role_policy=json.dumps(
@@ -366,9 +353,7 @@ class StepFunctionsStack(pulumi.ComponentResource):
             tags={**tags, "Name": get_resource_name("step-fn", env)},
         )
 
-        # ------------------------------
         # EventBridge Rule
-        # ------------------------------
         eventbridge_role = aws.iam.Role(
             get_resource_name("eventbridge-role", env),
             assume_role_policy=json.dumps(
