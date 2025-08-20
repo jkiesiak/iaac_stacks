@@ -1,18 +1,15 @@
 import json
-import random
 import string
 from typing import Dict
-from pulumi_random import RandomPassword
-from pulumi_aws.apigateway import RestApiEndpointConfigurationArgs
 
 import pulumi
 import pulumi_aws as aws
 from naming_utils import get_resource_name
+from pulumi_random import RandomPassword
 
 HTTP_METHODS = ["GET", "PUT"]
-ENDPOINTS = {"orders": "/orders", "customers": "/customers"}
+ENDPOINTS = {"orders": "orders", "customers": "customers"}
 STAGE_NAME = "prod"
-PASSWORD_CHARS = string.ascii_letters + string.digits + "_%@"
 
 
 class ApiGatewayStack(pulumi.ComponentResource):
@@ -58,14 +55,6 @@ class ApiGatewayStack(pulumi.ComponentResource):
                 lambda pwd: json.dumps({"password": pwd})
             ),
             opts=pulumi.ResourceOptions(parent=api_password_secret),
-        )
-
-        # Create API Gateway REST API
-        rest_api = aws.apigateway.RestApi(
-            resource_name=get_resource_name("Rest-Api", env),
-            name=get_resource_name("Rest-Api", env),
-            endpoint_configuration={"types": "REGIONAL"},
-            opts=pulumi.ResourceOptions(parent=self),
         )
 
         # Create Lambda Execution Role with necessary permissions
@@ -187,20 +176,19 @@ class ApiGatewayStack(pulumi.ComponentResource):
             layers=None,
         )
 
+        # Create API Gateway REST API
+        rest_api = aws.apigateway.RestApi(
+            resource_name=get_resource_name("Rest-Api", env),
+            name=get_resource_name("Rest-Api", env),
+            endpoint_configuration={"types": "REGIONAL"},
+            opts=pulumi.ResourceOptions(parent=self),
+        )
+
         # Allow API Gateway to invoke token authorizer
         lambda_permission = aws.lambda_.Permission(
             get_resource_name("invoke-token-authorizer", env),
             action="lambda:InvokeFunction",
             function=lambda_token_authorizer.name,
-            principal="apigateway.amazonaws.com",
-            source_arn=rest_api.execution_arn.apply(lambda arn: f"{arn}/*/*"),
-            opts=pulumi.ResourceOptions(parent=self),
-        )
-
-        aws.lambda_.Permission(
-            get_resource_name("allow-apigw-invoke-rest-lambda", env),
-            action="lambda:InvokeFunction",
-            function=lambda_rest_api.name,
             principal="apigateway.amazonaws.com",
             source_arn=rest_api.execution_arn.apply(lambda arn: f"{arn}/*/*"),
             opts=pulumi.ResourceOptions(parent=self),
@@ -218,65 +206,111 @@ class ApiGatewayStack(pulumi.ComponentResource):
             identity_source="method.request.header.Authorization",
             type="TOKEN",
             opts=pulumi.ResourceOptions(parent=rest_api),
+            authorizer_result_ttl_in_seconds=0,
         )
-
+        uri_lambda_rest_api = pulumi.Output.concat(
+            "arn:aws:apigateway:",
+            aws.config.region,
+            ":lambda:path/2015-03-31/functions/",
+            lambda_rest_api.arn,
+            "/invocations",
+        )
         # --- API Gateway Resources & Methods ---
-        method_resources = []
-        integration_resources = []
-
+        resources = {}
         for key, path in ENDPOINTS.items():
-            resource = aws.apigateway.Resource(
-                get_resource_name(f"resource-{key}", env),
+            resources[key] = aws.apigateway.Resource(
+                f"{key}Resource",
                 rest_api=rest_api.id,
                 parent_id=rest_api.root_resource_id,
-                path_part=key,
-                opts=pulumi.ResourceOptions(parent=rest_api),
+                path_part=path,
             )
 
-            for method in HTTP_METHODS:
-                request_params = {"method.request.header.Authorization": True}
-                if key == "customers":
-                    request_params["method.request.querystring.customer_id"] = False
-                elif key == "orders":
-                    request_params["method.request.querystring.order_id"] = False
+        # === Methods + Integrations ===
+        http_methods = ["GET", "PUT"]
 
-                method_res = aws.apigateway.Method(
-                    get_resource_name(f"method-{key}-{method}", env),
+        methods = {}
+        integrations = {}
+
+        for key, resource in resources.items():
+            for method in http_methods:
+                method_name = f"{key}-{method}"
+
+                api_method = aws.apigateway.Method(
+                    method_name,
                     rest_api=rest_api.id,
                     resource_id=resource.id,
                     http_method=method,
                     authorization="CUSTOM",
                     authorizer_id=authorizer.id,
-                    request_parameters=request_params,
-                    opts=pulumi.ResourceOptions(parent=resource),
+                    request_parameters={
+                        "method.request.header.Authorization": True,
+                        **(
+                            {"method.request.querystring.customer_id": False}
+                            if key == "customers"
+                            else {}
+                        ),
+                        **(
+                            {"method.request.querystring.order_id": False}
+                            if key == "orders"
+                            else {}
+                        ),
+                    },
                 )
-                uri = pulumi.Output.all(region, lambda_rest_api.arn).apply(
-                    lambda args: f"arn:aws:apigateway:{args[0]}:lambda:path/2015-03-31/functions/{args[1]}/invocations"
-                )
-                integration_res = aws.apigateway.Integration(
-                    get_resource_name(f"integration-{key}-{method}", env),
+                methods[method_name] = api_method
+
+                integration = aws.apigateway.Integration(
+                    f"{method_name}-integration",
                     rest_api=rest_api.id,
                     resource_id=resource.id,
-                    http_method=method,  # must match the Method's HTTP method
-                    integration_http_method="POST",  # for Lambda proxy
+                    http_method=api_method.http_method,
+                    integration_http_method="POST",
                     type="AWS_PROXY",
-                    uri=uri,
-                    passthrough_behavior="WHEN_NO_MATCH",
-                    opts=pulumi.ResourceOptions(
-                        parent=resource, depends_on=[method_res]
+                    uri=uri_lambda_rest_api,
+                )
+
+                integrations[method_name] = integration
+
+                aws.apigateway.MethodResponse(
+                    f"{method_name}-response",
+                    rest_api=rest_api.id,
+                    resource_id=api_method.resource_id,
+                    http_method=api_method.http_method,
+                    status_code="200",
+                    response_parameters={
+                        "method.response.header.Access-Control-Allow-Origin": True,
+                    },
+                    response_models={"application/json": "Empty"},
+                )
+                print("DEBUG integration type:", type(integration))
+
+                aws.apigateway.IntegrationResponse(
+                    f"{method_name}-integrationResponse",
+                    rest_api=rest_api.id,
+                    resource_id=api_method.resource_id,
+                    http_method=api_method.http_method,
+                    status_code="200",
+                    response_parameters={
+                        "method.response.header.Access-Control-Allow-Origin": "'*'",
+                    },
+                    opts=pulumi.ResourceOptions(depends_on=[integration]),
+                )
+                perm_name = get_resource_name(f"{key}-{method}-lambda-permission", env)
+
+                aws.lambda_.Permission(
+                    perm_name,
+                    action="lambda:InvokeFunction",
+                    function=lambda_rest_api.name,
+                    principal="apigateway.amazonaws.com",
+                    source_arn=rest_api.execution_arn.apply(
+                        lambda arn, m=method, p=key: f"{arn}/*/{m}/{p}"
                     ),
                 )
 
-                method_resources.append(method_res)
-                integration_resources.append(integration_res)
-
         # Deployment after all methods exist
         deployment = aws.apigateway.Deployment(
-            get_resource_name("rest-api-deployment", env),
+            get_resource_name("deployment", env),
             rest_api=rest_api.id,
-            opts=pulumi.ResourceOptions(
-                parent=rest_api, depends_on=integration_resources
-            ),
+            opts=pulumi.ResourceOptions(depends_on=list(integrations.values())),
         )
 
         aws.apigateway.Stage(
@@ -284,9 +318,7 @@ class ApiGatewayStack(pulumi.ComponentResource):
             rest_api=rest_api.id,
             deployment=deployment.id,
             stage_name=STAGE_NAME,
-            opts=pulumi.ResourceOptions(
-                parent=rest_api, depends_on=integration_resources
-            ),
+            opts=pulumi.ResourceOptions(parent=rest_api, depends_on=[deployment]),
         )
 
         # --- Outputs ---

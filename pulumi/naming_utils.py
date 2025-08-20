@@ -1,8 +1,4 @@
 # naming_utils.py
-import random
-import string
-
-import pulumi_random as random
 
 
 def get_resource_name(resource_type: str, env: str) -> str:
@@ -17,7 +13,3 @@ def get_resource_name(resource_type: str, env: str) -> str:
         str: Combined resource name.
     """
     return f"{resource_type}-{env}"
-
-def generate_password(length=16):
-    chars = string.ascii_letters + string.digits + "!#$%&*-_=+[]{}<>:?"
-    return ''.join(random.choice(chars) for _ in range(length))
