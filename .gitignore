@@ -23,3 +23,5 @@ TODO.txt
 cdk.out/
 __pycache__/
 cdk.out-*
+
+Pulumi.dev.local.yaml
