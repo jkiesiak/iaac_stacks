@@ -59,14 +59,14 @@ if [ -z "$aws_profile" ]; then
     exit 1
 fi
 
-terraform -chdir=./terraform init
+terraform init
 
 echo "---------- Operational step: setup resources with provided workspace ---------- "
-terraform -chdir=./terraform workspace new $workspace_name
-terraform -chdir=./terraform workspace select $workspace_name
+terraform workspace new $workspace_name
+terraform workspace select $workspace_name
 
 echo "---------- Operational step: clean-up of the code ---------- "
-terraform -chdir=./terraform fmt
+terraform fmt
 
 echo "---------- Operational step: start all resources ---------- "
-terraform -chdir=./terraform apply -auto-approve -var is_development=true -lock=false
+terraform apply -auto-approve -var is_development=true -lock=false
