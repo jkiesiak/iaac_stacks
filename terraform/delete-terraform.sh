@@ -1,11 +1,11 @@
 #!/bin/bash
 
-export AWS_PROFILE=
+export AWS_PROFILE=user_infra
 echo $AWS_PROFILE
 
-export WORKSPACE=
+export WORKSPACE=test
 export AWS_DEFAULT_REGION=eu-west-1
 echo $AWS_DEFAULT_REGION
 echo "-----------------------------"
-terraform -chdir=./terraform workspace select $WORKSPACE
-terraform -chdir=./terraform destroy -auto-approve
+terraform workspace select $WORKSPACE
+terraform destroy -auto-approve
