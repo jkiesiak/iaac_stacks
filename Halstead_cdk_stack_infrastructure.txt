@@ -1,0 +1,133 @@
+cdk_stack_infrastructure/naming_utils.py: 
+SLOC=10, 
+PLOC=16, 
+Comments=1, 
+Blank=5, 
+HV=30.00, 
+CC=2, 
+MI(orig)=311.61, 
+MI(ms)=67.57
+cdk_stack_infrastructure/cdk.json: 
+SLOC=8, 
+PLOC=9, 
+Comments=0, 
+Blank=1, 
+HV=64.53, 
+CC=1, 
+MI(orig)=115.41, 
+MI(ms)=67.49
+cdk_stack_infrastructure/app.py: 
+SLOC=11, 
+PLOC=19, 
+Comments=0, 
+Blank=8, 
+HV=206.32, 
+CC=2, 
+MI(orig)=103.98, 
+MI(ms)=60.81
+cdk_stack_infrastructure/lambda_grant_token_access/lambda_handler.py: 
+SLOC=53, 
+PLOC=76, 
+Comments=5, 
+Blank=18, 
+HV=887.18, 
+CC=16, 
+MI(orig)=268.85, 
+MI(ms)=39.59
+cdk_stack_infrastructure/stacks/api_gateway.py: 
+SLOC=176, 
+PLOC=213, 
+Comments=14, 
+Blank=23, 
+HV=3158.99, 
+CC=12, 
+MI(orig)=243.63, 
+MI(ms)=24.90
+cdk_stack_infrastructure/stacks/rds_stack.py: 
+SLOC=143, 
+PLOC=171, 
+Comments=15, 
+Blank=13, 
+HV=1017.99, 
+CC=6, 
+MI(orig)=285.47, 
+MI(ms)=31.12
+cdk_stack_infrastructure/stacks/main_stack.py: 
+SLOC=49, 
+PLOC=57, 
+Comments=0, 
+Blank=8, 
+HV=970.74, 
+CC=1, 
+MI(orig)=71.96, 
+MI(ms)=42.08
+cdk_stack_infrastructure/stacks/step_functions_stack.py: 
+SLOC=247, 
+PLOC=283, 
+Comments=10, 
+Blank=26, 
+HV=3718.13, 
+CC=2, 
+MI(orig)=185.95, 
+MI(ms)=22.54
+cdk_stack_infrastructure/stacks/network.py: 
+SLOC=64, 
+PLOC=83, 
+Comments=8, 
+Blank=11, 
+HV=1079.74, 
+CC=5, 
+MI(orig)=309.63, 
+MI(ms)=38.69
+cdk_stack_infrastructure/lambda_rest_api/lambda_handler.py: 
+SLOC=189, 
+PLOC=244, 
+Comments=2, 
+Blank=53, 
+HV=4025.68, 
+CC=41, 
+MI(orig)=104.49, 
+MI(ms)=19.59
+cdk_stack_infrastructure/lambda_insert_data_into_rds/lambda_handler.py: 
+SLOC=108, 
+PLOC=137, 
+Comments=4, 
+Blank=25, 
+HV=2244.65, 
+CC=24, 
+MI(orig)=183.51, 
+MI(ms)=28.95
+cdk_stack_infrastructure/lambda_store_backup/lambda_handler.py: 
+SLOC=46, 
+PLOC=59, 
+Comments=3, 
+Blank=10, 
+HV=622.11, 
+CC=6, 
+MI(orig)=250.98, 
+MI(ms)=43.36
+cdk_stack_infrastructure/apply_sql_schema/index.py: 
+SLOC=118, 
+PLOC=150, 
+Comments=8, 
+Blank=24, 
+HV=1614.00, 
+CC=20, 
+MI(orig)=231.81, 
+MI(ms)=29.65
+
+==================================================
+SUMMARY
+==================================================
+Total Physical Lines of Code (PLOC): 1517
+Total Source Lines of Code (SLOC): 1222
+Total Comments: 70
+Total Blank Lines: 225
+Unique Operators: 140
+Unique Operands: 809
+Total Operators: 814
+Total Operands: 2161
+Halstead Volume: 29423.54
+Cyclomatic Complexity: 138
+Maintainability Index (Original): 139.06
+Maintainability Index (Microsoft 0–100 scale): 0.00

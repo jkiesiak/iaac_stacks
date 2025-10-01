@@ -188,15 +188,13 @@ def calculate_cyclomatic_complexity(content: str, extension: str) -> int:
     Calculate a basic cyclomatic complexity estimate.
     In production, you'd use tools like radon for Python or custom parsers.
     """
-    complexity = 1  # Base complexity
+    complexity = 1
 
     if extension == ".py":
-        # Count decision points
         decision_keywords = ['if', 'elif', 'for', 'while', 'and', 'or', 'except', 'with']
         for keyword in decision_keywords:
             complexity += len(re.findall(rf'\b{keyword}\b', content))
     elif extension == ".tf":
-        # Count conditionals and loops
         decision_keywords = ['count', 'for_each', 'if']
         for keyword in decision_keywords:
             complexity += len(re.findall(rf'\b{keyword}\b', content))
@@ -230,7 +228,7 @@ def maintainability_index(HV, CC, LOC, comment_lines, total_lines):
     # Percentage of comments
     perCOM = (comment_lines / total_lines) * 100 if total_lines > 0 else 0
 
-    # Original formula
+    # Maintability index formula
     try:
         MI_original = 171 - 5.2 * math.log(HV) - 0.23 * CC - 16.2 * math.log(LOC) + \
                       50 * math.sqrt(2.46 * perCOM)
@@ -374,8 +372,8 @@ def count_lines_in_directory(directory: str, excluded_folders: List[str] = None)
 
 
 if __name__ == "__main__":
-    folder_path = "terraform"
-    excluded_folders = [".venv", "__pycache__", ".git", "node_modules", ".terraform"]
+    folder_path = "cdk_stack_infrastructure"
+    excluded_folders = [".venv", "__pycache__", ".git", "node_modules", ".terraform", "dependencies", "sql_schema", "naming_utils.py"]
     output_file = f"Halstead_{folder_path}.txt"
 
     results, summary = count_lines_in_directory(folder_path, excluded_folders)
