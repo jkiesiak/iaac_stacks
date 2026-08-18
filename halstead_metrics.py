@@ -218,32 +218,23 @@ def maintainability_index(HV, CC, LOC, comment_lines, total_lines):
     """Calculate both original and Microsoft Maintainability Index."""
     if LOC == 0:
         return 0, 0
-
-    # Avoid log of zero or negative values
     if HV <= 0:
         HV = 1
-    if LOC <= 0:
-        LOC = 1
 
     # Percentage of comments
-    perCOM = (comment_lines / total_lines) * 100 if total_lines > 0 else 0
+    perCOM = (comment_lines / total_lines) if total_lines > 0 else 0
+    perCOM = max(0.0, min(1.0, perCOM))
 
     # Maintability index formula
+    base = 171 - 5.2 * math.log(HV) - 0.23 * CC - 16.2 * math.log(LOC)
+
     try:
-        MI_original = 171 - 5.2 * math.log(HV) - 0.23 * CC - 16.2 * math.log(LOC) + \
-                      50 * math.sqrt(2.46 * perCOM)
+        MI_original = base + 50 * math.sin(math.sqrt(2.4 * perCOM))
     except (ValueError, ZeroDivisionError):
         MI_original = 0
 
-    # Microsoft formula (excludes comment factor, then normalized to 0-100)
     try:
-        # Microsoft uses simplified formula without comment factor
-        MI_base = 171 - 5.2 * math.log(HV) - 0.23 * CC - 16.2 * math.log(LOC)
-
-        # Normalize to 0-100 scale
-        # The normalization uses the theoretical max of 171 as the baseline
-        MI_ms = max(0, min(100, (MI_base * 100) / 171))
-
+        MI_ms = max(0.0, min(100.0, (base * 100) / 171))
     except (ValueError, ZeroDivisionError, OverflowError):
         MI_ms = 0
 
@@ -372,6 +363,7 @@ def count_lines_in_directory(directory: str, excluded_folders: List[str] = None)
 
 
 if __name__ == "__main__":
+    # folder_path = stack name: terraform/json_infra/pulumi
     folder_path = "cdk_stack_infrastructure"
     excluded_folders = [".venv", "__pycache__", ".git", "node_modules", ".terraform", "dependencies", "sql_schema", "naming_utils.py"]
     output_file = f"Halstead_{folder_path}.txt"
