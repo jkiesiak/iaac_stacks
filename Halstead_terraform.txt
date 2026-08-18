@@ -1,0 +1,97 @@
+terraform/step_functions.tf: 
+SLOC=341, 
+PLOC=394, 
+Comments=1, 
+Blank=52, 
+HV=6880.40, 
+CC=1, 
+MI(orig)=69.85, 
+MI(ms)=17.75
+terraform/rest_api.tf: 
+SLOC=371, 
+PLOC=450, 
+Comments=9, 
+Blank=70, 
+HV=2491.70, 
+CC=7, 
+MI(orig)=143.79, 
+MI(ms)=19.23
+terraform/main.tf: 
+SLOC=49, 
+PLOC=60, 
+Comments=0, 
+Blank=11, 
+HV=886.24, 
+CC=1, 
+MI(orig)=72.43, 
+MI(ms)=42.36
+terraform/network.tf: 
+SLOC=50, 
+PLOC=66, 
+Comments=0, 
+Blank=16, 
+HV=1118.21, 
+CC=1, 
+MI(orig)=70.89, 
+MI(ms)=41.46
+terraform/rds.tf: 
+SLOC=56, 
+PLOC=63, 
+Comments=0, 
+Blank=7, 
+HV=1206.54, 
+CC=1, 
+MI(orig)=68.66, 
+MI(ms)=40.15
+terraform/lambda_grant_token_access/src/lambda_handler.py: 
+SLOC=54, 
+PLOC=77, 
+Comments=5, 
+Blank=18, 
+HV=948.00, 
+CC=16, 
+MI(orig)=266.89, 
+MI(ms)=39.21
+terraform/lambda_rest_api/src/lambda_handler.py: 
+SLOC=189, 
+PLOC=244, 
+Comments=2, 
+Blank=53, 
+HV=4018.59, 
+CC=41, 
+MI(orig)=104.50, 
+MI(ms)=19.59
+terraform/lambda_store_backup/src/lambda_handler.py: 
+SLOC=46, 
+PLOC=59, 
+Comments=3, 
+Blank=10, 
+HV=622.11, 
+CC=6, 
+MI(orig)=250.98, 
+MI(ms)=43.36
+terraform/lambda/src/lambda_handler.py: 
+SLOC=111, 
+PLOC=138, 
+Comments=4, 
+Blank=23, 
+HV=2237.95, 
+CC=22, 
+MI(orig)=183.05, 
+MI(ms)=28.97
+
+==================================================
+SUMMARY
+==================================================
+Total Physical Lines of Code (PLOC): 1551
+Total Source Lines of Code (SLOC): 1267
+Total Comments: 24
+Total Blank Lines: 260
+Unique Operators: 101
+Unique Operands: 849
+Total Operators: 795
+Total Operands: 2121
+Halstead Volume: 28844.44
+Cyclomatic Complexity: 96
+Maintainability Index (Original): 77.33
+Maintainability Index (Microsoft 0–100 scale): 0.00

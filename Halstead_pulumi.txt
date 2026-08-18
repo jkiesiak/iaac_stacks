@@ -1,0 +1,115 @@
+pulumi/naming_utils.py: 
+SLOC=10, 
+PLOC=16, 
+Comments=1, 
+Blank=5, 
+HV=30.00, 
+CC=2, 
+MI(orig)=311.61, 
+MI(ms)=67.57
+pulumi/__main__.py: 
+SLOC=37, 
+PLOC=44, 
+Comments=0, 
+Blank=7, 
+HV=677.66, 
+CC=3, 
+MI(orig)=77.92, 
+MI(ms)=45.57
+pulumi/lambda_grant_token_access/lambda_handler.py: 
+SLOC=53, 
+PLOC=76, 
+Comments=5, 
+Blank=18, 
+HV=887.18, 
+CC=16, 
+MI(orig)=268.85, 
+MI(ms)=39.59
+pulumi/lambda_rest_api/lambda_handler.py: 
+SLOC=191, 
+PLOC=245, 
+Comments=2, 
+Blank=52, 
+HV=4087.40, 
+CC=42, 
+MI(orig)=103.87, 
+MI(ms)=19.31
+pulumi/lambda_insert_data_into_rds/lambda_handler.py: 
+SLOC=108, 
+PLOC=137, 
+Comments=4, 
+Blank=25, 
+HV=2244.65, 
+CC=24, 
+MI(orig)=183.51, 
+MI(ms)=28.95
+pulumi/components/tags.py: 
+SLOC=7, 
+PLOC=8, 
+Comments=0, 
+Blank=1, 
+HV=22.46, 
+CC=1, 
+MI(orig)=123.07, 
+MI(ms)=71.97
+pulumi/components/api_gateway.py: 
+SLOC=293, 
+PLOC=334, 
+Comments=8, 
+Blank=33, 
+HV=4914.18, 
+CC=9, 
+MI(orig)=154.08, 
+MI(ms)=19.13
+pulumi/components/rds.py: 
+SLOC=104, 
+PLOC=121, 
+Comments=4, 
+Blank=13, 
+HV=2132.75, 
+CC=4, 
+MI(orig)=197.57, 
+MI(ms)=32.15
+pulumi/components/network.py: 
+SLOC=163, 
+PLOC=195, 
+Comments=10, 
+Blank=22, 
+HV=3852.20, 
+CC=10, 
+MI(orig)=220.84, 
+MI(ms)=25.29
+pulumi/components/step_functions.py: 
+SLOC=393, 
+PLOC=429, 
+Comments=10, 
+Blank=26, 
+HV=4121.43, 
+CC=4, 
+MI(orig)=149.75, 
+MI(ms)=17.56
+pulumi/lambda_store_backup/lambda_handler.py: 
+SLOC=46, 
+PLOC=59, 
+Comments=3, 
+Blank=10, 
+HV=622.11, 
+CC=6, 
+MI(orig)=250.98, 
+MI(ms)=43.36
+
+==================================================
+SUMMARY
+==================================================
+Total Physical Lines of Code (PLOC): 1664
+Total Source Lines of Code (SLOC): 1405
+Total Comments: 47
+Total Blank Lines: 212
+Unique Operators: 122
+Unique Operands: 763
+Total Operators: 947
+Total Operands: 2549
+Halstead Volume: 34224.21
+Cyclomatic Complexity: 121
+Maintainability Index (Original): 103.26
+Maintainability Index (Microsoft 0–100 scale): 0.00
